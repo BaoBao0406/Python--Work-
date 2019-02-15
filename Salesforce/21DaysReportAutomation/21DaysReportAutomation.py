@@ -3,7 +3,7 @@
 # with distribution list.
 
 from simple_salesforce import Salesforce, SalesforceLogin
-import requests, password, datetime
+import requests, password, datetime, openpyxl
 import stripJunkSimpleSalesforce as stripForce
 import pandas as pd
 
@@ -16,53 +16,43 @@ sf= Salesforce(instance=instance, session_id=session_id)
 session = requests.Session()
 
 # Get Date for 21 days later
-EndDate = datetime.datetime.now() + datetime.timedelta(days=20)
-year = EndDate.year
-month = '%02d'% EndDate.month
-day = '%02d'% EndDate.day
-End_Date = str(year) + '-' + str(month) + '-' + str(day)
+now = datetime.datetime.now()
+EndDate = now + datetime.timedelta(days=21)
+Current_Date = str(now.year) + '-' + str('%02d'% now.month) + '-' + str('%02d'% now.day)
+End_Date = str(EndDate.year) + '-' + str('%02d'% EndDate.month) + '-' + str('%02d'% EndDate.day)
 
 Status = ['Prospect', 'Tentative']
-
+TabName = ['PROS', 'TENT']
 
 # Run for both Prospect and Tentative status for Booking tab
-for s in Status:
-    # Use SOQL languauges to export the Booking tab from Salesforce
-    data1 = sf.query("SELECT Owner.Name, Owner.Email, nihrm__Account__r.name, nihrm__Agency__r.name, nihrm__Property__c, Name, nihrm__ArrivalDate__c, nihrm__DepartureDate__c, nihrm__BookingTypeName__c, nihrm__ForecastRoomnightsTotal__c, nihrm__DecisionDate__c, nihrm__BookedDate__c FROM nihrm__Booking__c WHERE (nihrm__BookingStatus__c = '" + str(s) + "') AND (nihrm__BookingTypeName__c NOT IN ('Default', 'IN Internal', 'CN Concert')) AND (nihrm__ArrivalDate__c >= TODAY AND nihrm__ArrivalDate__c <= " + str(End_Date) + ") AND (nihrm__Property__c NOT IN ('Sands Macao Hotel'))")
-
+for s, n in zip(Status, TabName) :
+    # Booking tab - Use SOQL languauges to export the Booking tab from Salesforce
+    BKdata1 = sf.query("SELECT Owner.Name, Owner.Email, nihrm__Account__r.name, nihrm__Agency__r.name, nihrm__Property__c, Name, nihrm__ArrivalDate__c, nihrm__DepartureDate__c, nihrm__BookingTypeName__c, nihrm__ForecastRoomnightsTotal__c, nihrm__DecisionDate__c, nihrm__BookedDate__c FROM nihrm__Booking__c WHERE (nihrm__BookingStatus__c = '" + str(s) + "') AND (nihrm__BookingTypeName__c NOT IN ('Default', 'IN Internal', 'CN Concert')) AND (nihrm__ArrivalDate__c >= TODAY AND nihrm__ArrivalDate__c <= " + str(End_Date) + ") AND (nihrm__Property__c NOT IN ('Sands Macao Hotel'))")
     # Convert the data to a readable format
-    data2 = stripForce.stripJunkSimpleSalesforce(data1)
+    BKdata2 = stripForce.stripJunkSimpleSalesforce(BKdata1)
     # Sorting the order for the columns
     index = ['Owner.Name', 'nihrm__Property__c', 'nihrm__Account__r.Name', 'nihrm__Agency__r.Name', 'Name', 'nihrm__ArrivalDate__c', 'nihrm__DepartureDate__c', 'nihrm__BookingTypeName__c', 'nihrm__ForecastRoomnightsTotal__c', 'nihrm__DecisionDate__c', 'nihrm__BookedDate__c', 'Owner.Email']
-    data3 = pd.DataFrame.from_dict(data2)
-    data4 = pd.DataFrame(data3, columns = index)
-    # Transfer the data to excel file
-    if s == 'Prospect':
-        SheetName = 'PROS'
-    else:
-        SheetName = 'TENT'
-    writer = pd.ExcelWriter(str(s) + '.xlsx', engine ='xlsxwriter')
-    data4.to_excel(writer, index=False, sheet_name=SheetName)
-
+    BKdata3 = pd.DataFrame.from_dict(BKdata2)
+    BKdata4 = pd.DataFrame(BKdata3, columns = index)
     
-# Run for both Prospect and Tentative status for Room Block tab
-for s in Status:
+    
     # Property (Location) Code to exclude in the report -- need to ask Amademus
     ExcludeProp = "('a0Y28000001RJ07', 'a0Y28000001RJ0A', 'a0Y28000001RJ0B', 'a0Y28000001RJ0C')"
-    # Use SOQL languauges to export the Booking tab from Salesforce
-    data1 = sf.query("SELECT Owner.Name, nihrm__Location__c, nihrm__StartDate__c, Name, nihrm__Booking__r.nihrm__BookingTypeName__c, nihrm__RoomBlockStatus__c, nihrm__Booking__r.Name, nihrm__ForecastRoomnightsTotal__c FROM nihrm__BookingRoomBlock__c WHERE nihrm__Booking__r.nihrm__BookingTypeName__c NOT IN ('Default', 'IN Internal', 'CN Concert') AND (nihrm__RoomBlockStatus__c = 'Prospect') AND (nihrm__StartDate__c >= TODAY AND nihrm__StartDate__c <= 2019-03-05) AND (nihrm__Location__c NOT IN " + str(ExcludeProp) + ")")
-    
+    # Room Block tab - Use SOQL languauges to export the Room Block tab from Salesforce
+    RBdata1 = sf.query("SELECT Owner.Name, nihrm__Location__c, nihrm__StartDate__c, Name, nihrm__Booking__r.nihrm__BookingTypeName__c, nihrm__RoomBlockStatus__c, nihrm__Booking__r.Name, nihrm__ForecastRoomnightsTotal__c FROM nihrm__BookingRoomBlock__c WHERE nihrm__Booking__r.nihrm__BookingTypeName__c NOT IN ('Default', 'IN Internal', 'CN Concert') AND (nihrm__RoomBlockStatus__c = '" + str(s) + "') AND (nihrm__StartDate__c >= TODAY AND nihrm__StartDate__c <= " + str(End_Date) + ") AND (nihrm__Location__c NOT IN " + str(ExcludeProp) + ")")
     # Convert the data to a readable format
-    data2 = stripForce.stripJunkSimpleSalesforce(data1)
+    RBdata2 = stripForce.stripJunkSimpleSalesforce(RBdata1)
     # Sorting the order for the columns
     index = ['nihrm__Location__c', 'nihrm__Booking__r.Name', 'Name', 'Owner.Name', 'nihrm__Booking__r.nihrm__BookingTypeName__c', 'nihrm__RoomBlockStatus__c', 'nihrm__StartDate__c', 'nihrm__ForecastRoomnightsTotal__c']
-    data3 = pd.DataFrame.from_dict(data2)
-    data4 = pd.DataFrame(data3, columns = index)
-    # Transfer the data to excel file
-    writer = pd.ExcelWriter(str(s) + '.xlsx', engine ='xlsxwriter')
-    data4.to_excel(writer, index=False, sheet_name="RN Block by Property")
+    RBdata3 = pd.DataFrame.from_dict(RBdata2)
+    RBdata4 = pd.DataFrame(RBdata3, columns = index)
     
-
+    # Transfer the data to excel file
+    writer = pd.ExcelWriter(str(s) + '.xlsx', engine='xlsxwriter')
+    BKdata4.to_excel(writer, index=False, sheet_name=n, startrow=2)
+    RBdata4.to_excel(writer, index=False, sheet_name="RN Block by Property", startrow=2)
+            
+# TODO: Copy the Worksheet from (.xlsx) to Working File .(xlsm)
 # TODO: Run the excel marco function to format the excel file
 
 # TODO: Send email according to the distribution list
