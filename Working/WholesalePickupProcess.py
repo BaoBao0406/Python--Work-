@@ -101,6 +101,7 @@ excel.Visible = True
 # Seperate into two conditions as HIMCC and CMCC are in the same file
 for path4 in os.listdir(Revenue_Data):
     ColumnToCopy = [1, 2, 6, 9, 12, 15]
+    
     if "SCC" in path4:
         wb2 = excel.Workbooks.Open(Revenue_Data + "\\" + path4)
         # Select the correct worksheet for HIMCC and CMCC
@@ -114,7 +115,7 @@ for path4 in os.listdir(Revenue_Data):
         
         wb2.Close(True)
     
-    if "Parisian" in path4:
+    elif "Parisian" in path4:
         wb2 = excel.Workbooks.Open(Revenue_Data + "\\" + path4)
         # Parisian Worksheet
         wsPA = wb2.Worksheets('Report')
@@ -129,5 +130,8 @@ for path4 in os.listdir(Revenue_Data):
         
         wb2.Close(True)
 
+# Save As the excel file 
+New_Working_Filename = PathNPassword.New_Working_Filename
+wb1.SaveAs(Working_File_Path + New_Working_Filename)
+
 #excel.Application.Quit()
-# TODO : Save As the excel file 
