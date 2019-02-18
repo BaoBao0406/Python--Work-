@@ -6,6 +6,11 @@ from simple_salesforce import Salesforce, SalesforceLogin
 import requests, password, datetime
 import stripJunkSimpleSalesforce as stripForce
 import pandas as pd
+import win32com.client as win32
+from time import sleep
+excel = win32.gencache.EnsureDispatch('Excel.Application')
+
+path = 'D:\\Python\\Additional\\Salesforce\\21DaysReport\\'
 
 Username = password.username
 Password = password.password
@@ -25,7 +30,7 @@ Status = ['Prospect', 'Tentative']
 TabName = ['PROS', 'TENT']
 
 # Run for both Prospect and Tentative status for Booking tab
-for s, n in zip(Status, TabName) :
+for s, n in zip(Status, TabName):
     # Booking tab - Use SOQL languauges to export the Booking tab from Salesforce
     BKdata1 = sf.query("SELECT Owner.Name, Owner.Email, nihrm__Account__r.name, nihrm__Agency__r.name, nihrm__Property__c, Name, nihrm__ArrivalDate__c, nihrm__DepartureDate__c, nihrm__BookingTypeName__c, nihrm__ForecastRoomnightsTotal__c, nihrm__DecisionDate__c, nihrm__BookedDate__c \
                        FROM nihrm__Booking__c \
@@ -37,6 +42,11 @@ for s, n in zip(Status, TabName) :
              'nihrm__BookingTypeName__c', 'nihrm__ForecastRoomnightsTotal__c', 'nihrm__DecisionDate__c', 'nihrm__BookedDate__c', 'Owner.Email']
     BKdata3 = pd.DataFrame.from_dict(BKdata2)
     BKdata4 = pd.DataFrame(BKdata3, columns = index)
+    # Add to email distribution list
+    if n == "PROS":
+        ProsEmailList = BKdata4['Owner.Email'].tolist()
+    elif n == "TENT":
+        TentEmailList = BKdata4['Owner.Email'].tolist()
     
     # Property (Location) Code to exclude in the report
     ExcludeProp = "('FSHM', 'SGMH', 'SANDS', 'TSRM')"
@@ -55,10 +65,25 @@ for s, n in zip(Status, TabName) :
     writer = pd.ExcelWriter(str(s) + '.xlsx', engine='xlsxwriter')
     BKdata4.to_excel(writer, index=False, sheet_name=n, startrow=2)
     RBdata4.to_excel(writer, index=False, sheet_name="RN Block by Property", startrow=2)
-            
-# TODO: Copy the Worksheet from (.xlsx) to Working File .(xlsm)
-# TODO: Run the excel marco function to format the excel file
 
+sleep(10)
+for s, n in zip(Status, TabName):    
+    try:
+        # Copy the Worksheet from (.xlsx) to Working File .(xlsm)
+        wb1 = excel.Workbooks.Open(path + s + '.xlsx')
+    except Exception as e:
+        continue
+        wb2 = excel.Workbooks.Open(path + '21Days' + s + '.xlsm')
+        wsBK = wb1.Worksheets(n)
+        wsBK.Copy(Before=wb2.Worksheets('Sheet1'))
+        wsRB = wb1.Worksheets('RN Block by Property')
+        wsRB.Copy(Before=wb2.Worksheets('Sheet1'))
+        # Run the excel marco function to format the excel file
+        #excel.Application.Run('21Days' + s + "!Module1.Step1")
+        wb2.Close(SaveChanges=True)
+        wb1.Close()
+        excel.Quit()
+    
 # TODO: Send email according to the distribution list
    # TODO: Use the email template as the body
 
