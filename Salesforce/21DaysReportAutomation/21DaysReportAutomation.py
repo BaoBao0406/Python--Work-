@@ -3,7 +3,7 @@
 # with distribution list.
 
 from simple_salesforce import Salesforce, SalesforceLogin
-import requests, password, datetime
+import requests, password, datetime, os.path
 import stripJunkSimpleSalesforce as stripForce
 import pandas as pd
 import win32com.client as win32
@@ -24,9 +24,6 @@ SecurityToken = password.securitytoken
 # Email Login info
 Email = password.Email
 Epassword = password.Epassword
-DistributionList_To = password.DistributionList_To
-DistributionList_Cc = password.DistributionList_Cc
-EmailBody = password.EmailBody
 
 # Login to Salesforce
 session_id, instance = SalesforceLogin(username= Username, password= Password, security_token= SecurityToken)
@@ -104,7 +101,7 @@ smtpObj.ehlo()
 smtpObj.starttls()
 smtpObj.login(Email, Epassword)
 
-# TODO: Function for P and T status
+# Function for P and T status
 def Email_Sent_PROSnTENT(Status, Email, DistributionList_To, DistributionList_Cc, EmailBody, FilePath):
     fromaddr = Email
     toaddr = DistributionList_To
@@ -130,11 +127,23 @@ def Email_Sent_PROSnTENT(Status, Email, DistributionList_To, DistributionList_Cc
     except smtplib.SMTPException:
         print("Failed")
 
-# PROS report email sent
-# TODO: Check to see if the P and T file exist.
+# Loop for PROS and TENT status using different DistributionList and Body to sent
+for s in Status:
+    if s == "Prospect":
+        DistributionList_To = password.DistributionList_To_P
+        DistributionList_Cc = password.DistributionList_Cc_P
+        EmailBody = password.EmailBody_P
+        
+    elif s == "Tentative":
+        DistributionList_To = password.DistributionList_To_T
+        DistributionList_Cc = password.DistributionList_Cc_T
+        EmailBody = password.EmailBody_T
     
-# TENT report email sent
-# TODO: Check to see if the P and T file exist.        
+    FilePath = path + Current_Date + '21Days' + str(s) + 'Report.xlsm'
+    if os.path.exists(FilePath):
+        Email_Sent_PROSnTENT(s, Email, DistributionList_To, DistributionList_Cc, EmailBody, FilePath)
+    else:
+        continue              
 
 # TODO: Send follow up email to manager who need to follow up on the booking
    # TODO: Use the email template as the body
