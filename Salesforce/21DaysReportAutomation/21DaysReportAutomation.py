@@ -9,13 +9,26 @@ import pandas as pd
 import win32com.client as win32
 from time import sleep
 excel = win32.gencache.EnsureDispatch('Excel.Application')
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from email.header import Header
 
 path = 'D:\\Python\\Additional\\Salesforce\\21DaysReport\\'
 
+# Salesforce Login info
 Username = password.username
 Password = password.password
 SecurityToken = password.securitytoken
 
+# Email Login info
+Email = password.Email
+Epassword = password.Epassword
+DistributionList_To = password.DistributionList_To
+DistributionList_Cc = password.DistributionList_Cc
+EmailBody = password.EmailBody
+
+# Login to Salesforce
 session_id, instance = SalesforceLogin(username= Username, password= Password, security_token= SecurityToken)
 sf= Salesforce(instance=instance, session_id=session_id)
 session = requests.Session()
@@ -73,6 +86,7 @@ for s, n in zip(Status, TabName):
         wb1 = excel.Workbooks.Open(path + s + '.xlsx')
     except Exception as e:
         continue
+    else:
         wb2 = excel.Workbooks.Open(path + '21Days' + s + '.xlsm')
         wsBK = wb1.Worksheets(n)
         wsBK.Copy(Before=wb2.Worksheets('Sheet1'))
@@ -84,8 +98,43 @@ for s, n in zip(Status, TabName):
         wb1.Close()
         excel.Quit()
     
-# TODO: Send email according to the distribution list
-   # TODO: Use the email template as the body
+# Send email according to the distribution list
+smtpObj = smtplib.SMTP('smtp.gmail.com', 587)
+smtpObj.ehlo()
+smtpObj.starttls()
+smtpObj.login(Email, Epassword)
+
+# TODO: Function for P and T status
+def Email_Sent_PROSnTENT(Status, Email, DistributionList_To, DistributionList_Cc, EmailBody, FilePath):
+    fromaddr = Email
+    toaddr = DistributionList_To
+    cc = DistributionList_Cc
+
+    message = MIMEMultipart()
+    message.attach(MIMEText(EmailBody, 'html', 'utf-8'))
+    message['From'] = fromaddr
+    message['To'] = ','.join(toaddr)
+    message['Cc'] = ','.join(cc)
+
+    Subject = '21 Days ' + str(Status) + ' Report'
+    message['Subject'] = Header(Subject, 'utf-8')
+
+    att1 = MIMEText(open(FilePath, 'rb').read(), 'base64', 'utf-8')
+    att1["Content-Type"] = 'application/octet-steam'
+    att1["Content-Disposition"] = 'attachment; filename="21Days' + str(Status) + '.xlsm"'
+    message.attach(att1)
+
+    try:
+        smtpObj.sendmail(message['From'], [message['To'], message['Cc']], message.as_string())
+        print('Email sent')
+    except smtplib.SMTPException:
+        print("Failed")
+
+# PROS report email sent
+# TODO: Check to see if the P and T file exist.
+    
+# TENT report email sent
+# TODO: Check to see if the P and T file exist.        
 
 # TODO: Send follow up email to manager who need to follow up on the booking
    # TODO: Use the email template as the body
