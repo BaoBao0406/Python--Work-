@@ -6,7 +6,8 @@ import os.path, shutil, send2trash
 from pathlib import Path
 import win32com.client as win32
 from win32com.client import constants
-excel = win32.gencache.EnsureDispatch('Excel.Application')
+#excel = win32.gencache.EnsureDispatch('Excel.Application')
+excel = win32.DispatchEx("Excel.Application")
 from ctypes import windll
 import PathNPassword
 
@@ -30,10 +31,10 @@ LocationOfFile = []
 # Get the last modified file path
 def FileLocation(path1):
     last_modified_file = ''
+    n = 0
     for filename in os.listdir(path1):
         filename = str(path1) + "\\" + str(filename)
         filename = Path(filename)
-        n = 0
         time = filename.stat().st_mtime
         if time > n:
             n = time
@@ -47,7 +48,7 @@ for path2 in OriginalPath:
 
 # Remove last week's excel file in the specific folder
 for file in os.listdir(Revenue_Data):
-    send2trash.send2trash(Revenue_Data + "\\" + file)
+    send2trash.send2trash(Revenue_Data + file)
 
 # Move four files to specific folder
 for path3 in LocationOfFile:
@@ -67,7 +68,7 @@ def CopyNPaste(ws, Prop):
     RowRange = ws.Range("A1:A200")
     # Find the correct column in the revenue report to copy
     for i, value in enumerate(RowRange):
-        if "Business pick-up" in str(value):
+        if "Business pick" in str(value):
             LastCellNumber =  i
             break
     
@@ -94,8 +95,8 @@ def CopyNPaste(ws, Prop):
 # Open our working file by using password
 wb1 = excel.Workbooks.Open(Working_File, False, False, None, password, password)
 excel.Visible = True
-# Run Excel Macro in Working file
-#excel.Application.Run(Working_Filename + "!Module1.ClearData")
+# Run Excel Macro in Working file (Unhide all Worksheet and Clear Data)
+excel.Run("Module1.ClearData")
         
 # Open Revenue Report for copying data to our working file
 # Seperate into two conditions as HIMCC and CMCC are in the same file
@@ -108,7 +109,6 @@ for path4 in os.listdir(Revenue_Data):
         # Conrad Worksheet
         wsCM = wb2.Worksheets('Report - Conrad')
         CopyNPaste(wsCM, 'CMCC Raw')
-        
         # Holiday Inn Worksheet
         wsHI = wb2.Worksheets('Report - Holiday Inn')
         CopyNPaste(wsHI, 'HIMCC Raw')
@@ -132,6 +132,6 @@ for path4 in os.listdir(Revenue_Data):
 
 # Save As the excel file 
 New_Working_Filename = PathNPassword.New_Working_Filename
-wb1.SaveAs(Working_File_Path + New_Working_Filename)
+wb1.SaveAs(Working_File_Path + "\\" + New_Working_Filename)
 
 #excel.Application.Quit()
