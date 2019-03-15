@@ -130,6 +130,11 @@ for path4 in os.listdir(Revenue_Data):
         
         wb2.Close(True)
 
+# As of Date in working file
+As_of_Date = PathNPassword.As_of_Date
+ws1 = wb1.Worksheets('Summary')
+ws1.Cells(2, 2).Value = As_of_Date
+
 # Save As the excel file 
 New_Working_Filename = PathNPassword.New_Working_Filename
 wb1.SaveAs(Working_File_Path + "\\" + New_Working_Filename)
