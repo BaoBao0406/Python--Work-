@@ -4,7 +4,8 @@
 import os.path
 import win32com.client as win32
 excel = win32.gencache.EnsureDispatch('Excel.Application')
-#outlook = win32.client.Dispatch("Outlook.Application").GetNamespace("MAPI")\
+word = win32.DispatchEx("Word.Application")
+#outlook = win32.Dispatch("Outlook.Application").GetNamespace("MAPI")\
 
 
 # TODO: Get information from excel for Email, Name and field
@@ -13,10 +14,33 @@ wb1 = excel.Workbooks.Open(EmailList)
 excel.Visible = True
 ws1 = wb1.Worksheets('EmailList')
 
+# List for column number for Field and Attachment
+FieldList = []
+AttachList = []
+# Initital value for y, Field number and Attach number for loop function
+y = 1
+FieldNum = 1
+AttachNum = 1
+# To find the column number for Field and Attachment and add to the FieldList and AttachList
+while True:
+    # If the column header is empty, exit the loop
+    if str(ws1.Cells(3, y).Value) == 'None':
+        break
+    # Find the column number for Field to replace
+    if ws1.Cells(3, y).Value == 'Field' + str(FieldNum):
+        FieldList.append(y)
+        FieldNum += 1
+    # Find the column number for Attachment
+    if ws1.Cells(3, y).Value == 'Attach' + str(AttachNum):
+        AttachList.append(y)
+        AttachNum += 1
+    y += 1
+
 # Email draft need to create if Batch name match
 BatchToRun = ws1.Cells(1, 2).Value
 
 AssistantList = {}
+# x is to find the End of the row number
 x = 4
 while True:
     # If the Assistant field is empty, exit the loop
@@ -29,15 +53,15 @@ while True:
         if Name not in AssistantList:
             os.mkdir(Name)
             AssistantList.setdefault(Name, str(os.path.abspath(Name)))
-        # Create 
         
-
+        # Open word template to replace and create
+        #word.Documents.Open()
+        
+        #word.SaveAs(AssistantList[Name] + '\\' + Name + '.docx')
+        #word.Quit()
     x += 1
 
-
-# TODO: Create File for each assistant
-
-# TODO: Use word template location to create draft email
+# TODO: Create Word file
 
 # TODO: Convert the information to Word templatee
 
