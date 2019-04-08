@@ -1,17 +1,18 @@
 #! python3
 # BatchEmailMerge.py - Create email draft by using word template according to the information in excel file (for example : Email, Name, attachment, and field)
 
-import os.path
+import os.path, send2trash, mammoth
 import win32com.client as win32
 excel = win32.gencache.EnsureDispatch('Excel.Application')
 word = win32.DispatchEx("Word.Application")
 #outlook = win32.Dispatch("Outlook.Application").GetNamespace("MAPI")\
-
+word.Visible = False
+excel.Visible = False
 
 # TODO: Get information from excel for Email, Name and field
 EmailList = os.getcwd() + '\EmailList.xlsx'
 wb1 = excel.Workbooks.Open(EmailList)
-excel.Visible = True
+
 ws1 = wb1.Worksheets('EmailList')
 
 # List for column number for Field and Attachment
@@ -54,15 +55,25 @@ while True:
             os.mkdir(Name)
             AssistantList.setdefault(Name, str(os.path.abspath(Name)))
         
-        # Open word template to replace and create
-        #word.Documents.Open()
+        # Open word template to replace
+        doc = word.Documents.Open(os.getcwd() + '\\EmailTemplate.docx', False, True)
+        Num = 1
+        for field in FieldList:
+            word.Selection.Find.Execute(str('<Field' + str(Num) + '>'), False, False, False, False, False, True, 1, True, str(ws1.Cells(x, field).Value), 2)
+            Num += 1
+        # TODO: Amend the file name for Template file
+        doc.SaveAs('D:\\Python\\Additional\\Email\\BatchEmailMerge\\Template' + Name + '.docx', FileFormat=12)
+        doc.Close()
         
-        #word.SaveAs(AssistantList[Name] + '\\' + Name + '.docx')
-        #word.Quit()
+        # Convert the Word file into HTML text
+        with open('D:\\Python\\Additional\\Email\\BatchEmailMerge\\Template' + Name + '.docx', 'rb') as docx_file:
+            result = mammoth.convert_to_html(docx_file)
+            html = result.value
+        
+        # TODO: Amend the file name for Template file
+        #send2trash.send2trash('D:\\Python\\Additional\\Email\\BatchEmailMerge\\Template' + Name + '.docx')
+        
+        
+        # TODO: Create email draft and use HTML as body
+        
     x += 1
-
-# TODO: Create Word file
-
-# TODO: Convert the information to Word templatee
-
-# TODO: Create email draft
