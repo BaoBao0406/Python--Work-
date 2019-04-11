@@ -1,11 +1,11 @@
 #! python3
 # BatchEmailMerge.py - Create email draft by using word template according to the information in excel file (for example : Email, Name, attachment, and field)
 
-import os.path, send2trash, mammoth
+import os.path, send2trash, mammoth, re
 import win32com.client as win32
 excel = win32.gencache.EnsureDispatch('Excel.Application')
 word = win32.DispatchEx("Word.Application")
-#outlook = win32.Dispatch("Outlook.Application").GetNamespace("MAPI")\
+outlook = win32.Dispatch("Outlook.Application")
 word.Visible = False
 excel.Visible = False
 
@@ -56,24 +56,50 @@ while True:
             AssistantList.setdefault(Name, str(os.path.abspath(Name)))
         
         # Open word template to replace
-        doc = word.Documents.Open(os.getcwd() + '\\EmailTemplate.docx', False, True)
+        doc = word.Documents.Open(os.getcwd() + '\\EmailTemplate.docx', False, False)
         Num = 1
         for field in FieldList:
-            word.Selection.Find.Execute(str('<Field' + str(Num) + '>'), False, False, False, False, False, True, 1, True, str(ws1.Cells(x, field).Value), 2)
+            word.Selection.Find.Execute(str('[Field' + str(Num) + ']'), False, False, False, False, False, True, 1, True, str(ws1.Cells(x, field).Value), 2)
             Num += 1
         # TODO: Amend the file name for Template file
-        doc.SaveAs('D:\\Python\\Additional\\Email\\BatchEmailMerge\\Template' + Name + '.docx', FileFormat=12)
+        doc.SaveAs(os.getcwd() + '\\Template' + Name + '.docx', FileFormat=12)
         doc.Close()
         
         # Convert the Word file into HTML text
-        with open('D:\\Python\\Additional\\Email\\BatchEmailMerge\\Template' + Name + '.docx', 'rb') as docx_file:
+        with open(os.getcwd() + '\\Template' + Name + '.docx', 'rb') as docx_file:
             result = mammoth.convert_to_html(docx_file)
             html = result.value
         
-        # TODO: Amend the file name for Template file
-        #send2trash.send2trash('D:\\Python\\Additional\\Email\\BatchEmailMerge\\Template' + Name + '.docx')
+        # Search for keyWord [Image] in html to creat Image List
+        keyWord1 = re.compile(r'(\[Image\d\])')
+        ImageList = keyWord1.findall(html)
         
+        # TODO: Sentence for Properties in email body
         
-        # TODO: Create email draft and use HTML as body
+        # Create draft email in outlook
+        mail = outlook.CreateItem(0)
+        mail.To = str(ws1.Cells(x, 5).Value)
+        mail.CC = str(ws1.Cells(x, 6).Value)
+        mail.BCC = str(ws1.Cells(x, 7).Value)
+        mail.Subject = str(ws1.Cells(x, 4).Value)
         
+        # Add Image to the html body
+        ImgNum = 1
+        for image in ImageList:
+            # Use keyWord to replace the [Image] in HTML text
+            keyWord2 = re.compile(r'(\[Image%s\])' % ImgNum)
+            html = keyWord2.sub("<img src=""cid:MyId%s"">" % ImgNum, html)
+            attachment = mail.Attachments.Add(os.getcwd() + "\\Image%s.jpg" % ImgNum)
+            attachment.PropertyAccessor.SetProperty("http://schemas.microsoft.com/mapi/proptag/0x3712001F", "MyId%s" % ImgNum)
+            ImgNum += 1
+        
+        mail.HtmlBody = "<html><body>" + html +  "</body></html>"
+        # TODO: Add Attachment to the email
+        for field in AttachList:
+            mail.Attachments.Add(str(ws1.Cells(x, field).Value))
+            
+        # SaveAs the file in the Assistant folder
+        mail.SaveAs(Path=AssistantList[Name] + '\\' + ws1.Cells(x,2).Value + '.msg')
+        # Delete the word file create for email draft
+        send2trash.send2trash(os.getcwd() + '\\Template' + Name + '.docx')
     x += 1
