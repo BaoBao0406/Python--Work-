@@ -9,10 +9,9 @@ outlook = win32.Dispatch("Outlook.Application")
 word.Visible = False
 excel.Visible = False
 
-# TODO: Get information from excel for Email, Name and field
+# Open the Excel file and worksheet
 EmailList = os.getcwd() + '\EmailList.xlsx'
 wb1 = excel.Workbooks.Open(EmailList)
-
 ws1 = wb1.Worksheets('EmailList')
 
 # List for column number for Field and Attachment
@@ -39,7 +38,7 @@ while True:
 
 # Email draft need to create if Batch name match
 BatchToRun = ws1.Cells(1, 2).Value
-
+# Dictionary with path for email and number of email drafted
 AssistantList = {}
 # x is to find the End of the row number
 x = 4
@@ -53,15 +52,18 @@ while True:
         # Create Assistant Folder if it does not exist
         if Name not in AssistantList:
             os.mkdir(Name)
-            AssistantList.setdefault(Name, str(os.path.abspath(Name)))
-        
+            AssistantList.setdefault(Name, []).append(str(os.path.abspath(Name)))
+            AssistantList[Name].append(1)
+        else:
+            AssistantList[Name][1] = AssistantList[Name][1] + 1
+            
         # Open word template to replace
         doc = word.Documents.Open(os.getcwd() + '\\EmailTemplate.docx', False, False)
         Num = 1
         for field in FieldList:
             word.Selection.Find.Execute(str('[Field' + str(Num) + ']'), False, False, False, False, False, True, 1, True, str(ws1.Cells(x, field).Value), 2)
             Num += 1
-        # TODO: Amend the file name for Template file
+        # Amend the file name for Template file
         doc.SaveAs(os.getcwd() + '\\Template' + Name + '.docx', FileFormat=12)
         doc.Close()
         
@@ -94,12 +96,12 @@ while True:
             ImgNum += 1
         
         mail.HtmlBody = "<html><body>" + html +  "</body></html>"
-        # TODO: Add Attachment to the email
+        # Add Attachment to the email
         for field in AttachList:
             mail.Attachments.Add(str(ws1.Cells(x, field).Value))
             
         # SaveAs the file in the Assistant folder
-        mail.SaveAs(Path=AssistantList[Name] + '\\' + ws1.Cells(x,2).Value + '.msg')
+        mail.SaveAs(Path=AssistantList[Name][0] + '\\' + ws1.Cells(x,2).Value + str(AssistantList[Name][1]) + '.msg')
         # Delete the word file create for email draft
         send2trash.send2trash(os.getcwd() + '\\Template' + Name + '.docx')
     x += 1
