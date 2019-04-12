@@ -72,28 +72,41 @@ while True:
             result = mammoth.convert_to_html(docx_file)
             html = result.value
         
-        # Search for keyWord [Image] in html to creat Image List
+        # Search for keyWord [Image1] in html to creat Image List
         keyWord1 = re.compile(r'(\[Image\d\])')
         ImageList = keyWord1.findall(html)
+        # Search for keyWord [ImageRegion1] in html to creat Image List
+        keyWordCountry = re.compile(r'(\[ImageRegion\d\])')
+        CountryImageList = keyWordCountry.findall(html)
         
         # TODO: Sentence for Properties in email body
         
         # Create draft email in outlook
         mail = outlook.CreateItem(0)
-        mail.To = str(ws1.Cells(x, 5).Value)
-        mail.CC = str(ws1.Cells(x, 6).Value)
-        mail.BCC = str(ws1.Cells(x, 7).Value)
-        mail.Subject = str(ws1.Cells(x, 4).Value)
+        mail.To = str(ws1.Cells(x, 6).Value)
+        mail.CC = str(ws1.Cells(x, 7).Value)
+        mail.BCC = str(ws1.Cells(x, 8).Value)
+        mail.Subject = str(ws1.Cells(x, 5).Value)
         
-        # Add Image to the html body
+        # Add Image to html body
         ImgNum = 1
-        for image in ImageList:
-            # Use keyWord to replace the [Image] in HTML text
-            keyWord2 = re.compile(r'(\[Image%s\])' % ImgNum)
-            html = keyWord2.sub("<img src=""cid:MyId%s"">" % ImgNum, html)
-            attachment = mail.Attachments.Add(os.getcwd() + "\\Image%s.jpg" % ImgNum)
-            attachment.PropertyAccessor.SetProperty("http://schemas.microsoft.com/mapi/proptag/0x3712001F", "MyId%s" % ImgNum)
-            ImgNum += 1
+        if len(ImageList) > 0:
+            for image in ImageList:
+                # Use keyWord to replace the [Image] in HTML text
+                keyWord2 = re.compile(r'(\[Image%s\])' % ImgNum)
+                html = keyWord2.sub("<img src=""cid:MyId%s"">" % ImgNum, html)
+                attachment = mail.Attachments.Add(os.getcwd() + "\\Image\\Image%s.jpg" % ImgNum)
+                attachment.PropertyAccessor.SetProperty("http://schemas.microsoft.com/mapi/proptag/0x3712001F", "MyId%s" % ImgNum)
+                ImgNum += 1
+        # Add Image for Country to html body
+        if len(CountryImageList) > 0:
+            CountryImgNum = 1
+            for image in CountryImageList:
+                html = keyWordCountry.sub("<img src=""cid:MyId%s"">" % ImgNum, html)
+                attachment = mail.Attachments.Add("I:\\10-Sales\\Personal Folder\\Admin & Assistant Team\\Patrick Leong\\Python Code\\BatchEmailMerge\\Image\\Image%s%s.jpg" % (str(ws1.Cells(x, 4).Value), str(CountryImgNum)))
+                attachment.PropertyAccessor.SetProperty("http://schemas.microsoft.com/mapi/proptag/0x3712001F", "MyId%s" % ImgNum)
+                CountryImgNum += 1
+                ImgNum += 1
         
         mail.HtmlBody = "<html><body>" + html +  "</body></html>"
         # Add Attachment to the email
@@ -101,7 +114,7 @@ while True:
             mail.Attachments.Add(str(ws1.Cells(x, field).Value))
             
         # SaveAs the file in the Assistant folder
-        mail.SaveAs(Path=AssistantList[Name][0] + '\\' + ws1.Cells(x,2).Value + str(AssistantList[Name][1]) + '.msg')
+        mail.SaveAs(Path=AssistantList[Name][0] + '\\DraftEmail\\' + ws1.Cells(x,2).Value + str(AssistantList[Name][1]) + '.msg')
         # Delete the word file create for email draft
         send2trash.send2trash(os.getcwd() + '\\Template' + Name + '.docx')
     x += 1
