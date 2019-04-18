@@ -1,0 +1,11 @@
+The purpose of this python code:
+Find the latest excel file create by Revenue in three location, copy those files to our path. Then copy all four excel tabs data according to month 
+value and properties to our working file.
+
+Instruction:
+1. Make sure Revenue have put the WholesalePickUp report in all three paths.
+2. Run "WholesalePickupAutomation.py"
+
+P.S.
+  1. If any of the file path changed, go to PathNPassword.py to amend the file path
+  2. Still need to copy the value for the previous month for End of Month data, or else the previous month data will lost.
