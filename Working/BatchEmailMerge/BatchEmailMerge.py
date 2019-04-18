@@ -9,6 +9,8 @@ outlook = win32.Dispatch("Outlook.Application")
 word.Visible = False
 excel.Visible = False
 
+# TODO: Delete all files in DraftEmail folder
+
 # Open the Excel file and worksheet
 EmailList = os.getcwd() + '\EmailList.xlsx'
 wb1 = excel.Workbooks.Open(EmailList)
@@ -51,8 +53,9 @@ while True:
         Name = ws1.Cells(x, 2).Value
         # Create Assistant Folder if it does not exist
         if Name not in AssistantList:
-            os.mkdir(Name)
-            AssistantList.setdefault(Name, []).append(str(os.path.abspath(Name)))
+            path = os.getcwd() + '\\DraftEmail\\'
+            os.mkdir(path + Name)
+            AssistantList.setdefault(Name, []).append(str(path + Name))
             AssistantList[Name].append(1)
         else:
             AssistantList[Name][1] = AssistantList[Name][1] + 1
@@ -80,6 +83,8 @@ while True:
         CountryImageList = keyWordCountry.findall(html)
         
         # TODO: Sentence for Properties in email body
+        #if str(ws1.Cells(x, 3).Value) != 'None':
+            
         
         # Create draft email in outlook
         mail = outlook.CreateItem(0)
@@ -114,7 +119,7 @@ while True:
             mail.Attachments.Add(str(ws1.Cells(x, field).Value))
             
         # SaveAs the file in the Assistant folder
-        mail.SaveAs(Path=AssistantList[Name][0] + '\\DraftEmail\\' + ws1.Cells(x,2).Value + str(AssistantList[Name][1]) + '.msg')
+        mail.SaveAs(Path=AssistantList[Name][0] + '\\' + ws1.Cells(x,2).Value + str(AssistantList[Name][1]) + '.msg')
         # Delete the word file create for email draft
         send2trash.send2trash(os.getcwd() + '\\Template' + Name + '.docx')
     x += 1
