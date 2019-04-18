@@ -1,7 +1,8 @@
 #! python3
-# BatchEmailMerge.py - Create email draft by using word template according to the information in excel file (for example : Email, Name, attachment, and field)
+# BatchEmailMerge.py - Create draft email with word template according to the information in excel file 
+# (for example : Email, Name, attachment, and field)
 
-import os.path, send2trash, mammoth, re
+import os.path, shutil, mammoth, re
 import win32com.client as win32
 excel = win32.gencache.EnsureDispatch('Excel.Application')
 word = win32.DispatchEx("Word.Application")
@@ -9,7 +10,10 @@ outlook = win32.Dispatch("Outlook.Application")
 word.Visible = False
 excel.Visible = False
 
-# TODO: Delete all files in DraftEmail folder
+# Delete all files in DraftEmail folder
+path1 = os.getcwd() + '\\DraftEmail\\'
+for file in os.listdir(path1):
+    shutil.rmtree(path1 + file)
 
 # Open the Excel file and worksheet
 EmailList = os.getcwd() + '\EmailList.xlsx'
@@ -121,5 +125,5 @@ while True:
         # SaveAs the file in the Assistant folder
         mail.SaveAs(Path=AssistantList[Name][0] + '\\' + ws1.Cells(x,2).Value + str(AssistantList[Name][1]) + '.msg')
         # Delete the word file create for email draft
-        send2trash.send2trash(os.getcwd() + '\\Template' + Name + '.docx')
+        os.unlink(os.getcwd() + '\\Template' + Name + '.docx')
     x += 1
