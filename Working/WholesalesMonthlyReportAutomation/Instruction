@@ -1,12 +1,18 @@
+The purpose of this python code:
+Find the latest excel file create by Revenue in three location, copy those files to our path. Then copy all four excel tabs data according to month 
+value and properties to our working file.
+
+Instruction:
 1. Make sure Revenue have put all four files in the folder
+
 2. Make sure the file provided by Revenue, the Filename contain 
 	a. 'Venetian'
 	b. 'Conrad'
 	c. 'Holiday'
 	d. 'Parisian'
    If properties have changed, go back to the code and change the PropDict
+   
 3. Run the "WholesaleMonthlyReportAutomation.py"
-
 
 P.S. 
    1. If the data is not copied from Revenue to our RawData file, check to see if Revenue have put "grand total" at the end row of the Account Name.
