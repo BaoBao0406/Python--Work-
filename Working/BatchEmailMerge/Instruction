@@ -1,0 +1,26 @@
+The purpose of this python code:
+Create email drafts with Word Template provided based on the information in Excel file. (for example: Email To, CC, BCC, Subject, 
+Client Name, Attachement and images)
+
+
+Instruction:
+1. Input or create excel file (EmailList.xlsx)
+
+2. The draft email will create under the "DraftEmail" folder
+
+3. Draft email will create if "Batch" number equal to "Batch to Run" number. Tt will create the Folder if the Assistant Name exist 
+   on excel file, and the draft email will be saved under this folder
+   
+4. Information such as Subject, To, CC BCC and attachment will be copied into draft email based on the information in excel file.
+
+5. If the body of the email is different according to each email, add '[Field1]' or [Field2]' in Word Template. Then this code will
+   get the '[Field1]' or [Field2]' information from excel and create draft email.
+
+6. If there are images in the email body, put '[Image1]' or '[Image2]' in Word template and changed the image name to 'Image1' or 
+   'Image2' and put it in the Image folder. (it could only support .jpeg file at the moment)(can change to .png in the code)
+
+7. If the image changes according to the Region or Country(Language inside the image), put '[ImageRegion1]' or '[ImageRegion2]' in
+   Word template and changed the image name to 'Image----' (For example: if the image is for Japan then 'ImageJapan1', or for Korea 
+   then 'ImageKorea1'). Then put it in the Image folder. (The code will place the image based on the excel file column 'Region', and
+   create the draft email)
+   
