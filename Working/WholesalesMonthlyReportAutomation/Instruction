@@ -1,6 +1,6 @@
 The purpose of this python code:
-Find the latest excel file create by Revenue in three location, copy those files to our path. Then copy all four excel tabs data according to month 
-value and properties to our working file.
+Find the previous month excel file for all four properties, copy the 'MTD' tab and save as RawData file in our folder. Then copy those tabs
+into our working file and run the VBA Macro.
 
 Instruction:
 1. Make sure Revenue have put all four files in the folder
