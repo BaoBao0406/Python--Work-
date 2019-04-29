@@ -3,7 +3,7 @@
 # and download the attachment to specific location
 
 from win32com.client import Dispatch
-import datetime, os.path, re
+import datetime, os.path, re, hashlib
 
 outlook = Dispatch("Outlook.Application").GetNamespace("MAPI")
 inbox = outlook.GetDefaultFolder("6")
@@ -11,13 +11,12 @@ msgs = inbox.Items
 
 # Path for the Attachment to be saved
 AttachPath = 'I:\\10-Sales\\Personal Folder\\Admin & Assistant Team\\Patrick Leong\\Python Code\\RevenueEmailAttachement\\'
+# Outlook folder name to be moved to 
+MailFolder = 'Work Related'
 
 # Date Range from last three days
 d = (datetime.date.today() - datetime.timedelta (days=3)).strftime("%d-%m-%y")
 
-
-# Outlook folder name to be moved to 
-MailFolder = 'Work Related'
 # Search for Personal Folder and identify the loction
 root_folder = outlook.Folders.Item(3)
 for folder in root_folder.Folders:
@@ -27,21 +26,42 @@ for folder in root_folder.Folders:
 # Search in inbox for last three days
 msgs = msgs.Restrict("[ReceivedTime] >= '" + d +"'")
 
-# Function for attachment if email subject contain keyword
+# Use MD5 to search for two files if contain the same data
+def MD5(file):
+    hasher = hashlib.md5()
+    with open(file, 'rb') as afile:
+        buf = afile.read()
+        hasher.update(buf)
+    return hasher
+
+# Function to download attachment if email subject contain keyword
 def DownloadAttach():
     for att in msg.Attachments:
-        path = AttachPath + att.Filename
-        att.SaveAsFile(path)
-        # TODO: Search for file with the same filename 
+        FileCopied = False
+        # Search for file with the same filename 
+        for file in os.listdir(AttachPath):
+            if att.Filename == file:
+                temp = os.getcwd() + '\\(temp)' + att.Filename
+                att.SaveAsFile(temp)
+                new_md5 = MD5(temp)
+                os.unlink(temp)
+                old_md5 = MD5(file)
+                if new_md5 != old_md5:
+                    # Rename the filename if the file content is not the same
+                    path = AttachPath + '(Updated)' + att.Filename
+                    att.SaveAsFile(path)
+                FileCopied = True
+        # Copy file to path if current location does not have the same file
+        if FileCopied == False:
+            path = AttachPath + att.Filename
+            att.SaveAsFile(path)
 
 # Loop for all email within the Date Range with the keyword
 for msg in msgs:
     # Search for keywords that contain
     msgKeyWord = re.compile(r'Testing Python')
     msgSearch = msgKeyWord.search(msg.Subject)
-    print(msg.Subject)
     if (msgSearch != None) is True:
-        # Run Function
         DownloadAttach()
         # Move the email to specific folder
         msg.Move(donebox)
