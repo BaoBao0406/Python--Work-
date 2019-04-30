@@ -4,18 +4,20 @@
 
 from win32com.client import Dispatch
 import datetime, os.path, re, hashlib
-
 outlook = Dispatch("Outlook.Application").GetNamespace("MAPI")
 inbox = outlook.GetDefaultFolder("6")
 msgs = inbox.Items
+
 
 # Path for the Attachment to be saved
 AttachPath = 'I:\\10-Sales\\Personal Folder\\Admin & Assistant Team\\Patrick Leong\\Python Code\\RevenueEmailAttachement\\'
 # Outlook folder name to be moved to 
 MailFolder = 'Work Related'
+# Keyword to search for email subject
+msgKeyWord = re.compile(r'testing python')
 
 # Date Range from last three days
-d = (datetime.date.today() - datetime.timedelta (days=3)).strftime("%d-%m-%y")
+d = (datetime.date.today() - datetime.timedelta (days=5)).strftime("%d-%m-%y")
 
 # Search for Personal Folder and identify the loction
 root_folder = outlook.Folders.Item(3)
@@ -32,7 +34,7 @@ def MD5(file):
     with open(file, 'rb') as afile:
         buf = afile.read()
         hasher.update(buf)
-    return hasher
+    return hasher.hexdigest()
 
 # Function to download attachment if email subject contain keyword
 def DownloadAttach():
@@ -44,24 +46,27 @@ def DownloadAttach():
                 temp = os.getcwd() + '\\(temp)' + att.Filename
                 att.SaveAsFile(temp)
                 new_md5 = MD5(temp)
-                os.unlink(temp)
                 old_md5 = MD5(file)
                 if new_md5 != old_md5:
                     # Rename the filename if the file content is not the same
                     path = AttachPath + '(Updated)' + att.Filename
                     att.SaveAsFile(path)
                 FileCopied = True
+                os.unlink(temp)
         # Copy file to path if current location does not have the same file
         if FileCopied == False:
             path = AttachPath + att.Filename
             att.SaveAsFile(path)
 
+MsgToMove = []
 # Loop for all email within the Date Range with the keyword
 for msg in msgs:
-    # Search for keywords that contain
-    msgKeyWord = re.compile(r'Testing Python')
-    msgSearch = msgKeyWord.search(msg.Subject)
-    if (msgSearch != None) is True:
+    # Search for keywords in email subject
+    msgSearch = msgKeyWord.search((msg.Subject).lower())
+    if (msgSearch == None) is False:
         DownloadAttach()
-        # Move the email to specific folder
-        msg.Move(donebox)
+        MsgToMove.append(msg)
+        msgSearch = 'None'
+# Move email to specific folder
+for msg in MsgToMove:
+    msg.Move(donebox)
