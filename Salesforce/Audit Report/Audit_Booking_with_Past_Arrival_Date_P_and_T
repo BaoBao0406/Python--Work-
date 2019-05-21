@@ -2,12 +2,16 @@
 # Audit_Booking_with_Past_Arrival_Date_P_and_T.py - run data from salesforce for Past Arrival Date with P and
 # T status and send email to booking owner
 
-from simple_salesforce import Salesforce, SalesforceLogin
-import requests, password, datetime, os.path
+from simple_salesforce import Salesforce
+import requests, password, datetime
 import stripJunkSimpleSalesforce as stripForce
 import pandas as pd
 import win32com.client as win32
+outlook = win32.Dispatch("Outlook.Application")
 
+# Excel SaveAs file path
+year = datetime.datetime.today().year
+FilePath = 'I:\\10-Sales\\Delphi\\Audit_Info\\Audits\\MPE\\' + str(year) + '\\Booking\\Booking (T and P) with Past Arrival Date\\'
 
 # Salesforce Login info
 Username = password.Username
@@ -21,11 +25,12 @@ proxies = {"http": "http://10.96.250.10:80", "https":"https://10.96.250.10:80"}
 sf = Salesforce(instance='na1.salesforce.com', session_id='', proxies=proxies, username = Username, password= Password, security_token = securitytoken)
 session = requests.Session()
 
-# Get Date for 90 days later
+# Date Range is from last 90 days till now
 now = datetime.datetime.now()
 StartDate = now - datetime.timedelta(days=90)
 Current_Date = str(now.year) + '-' + str('%02d'% now.month) + '-' + str('%02d'% now.day)
 Start_Date = str(StartDate.year) + '-' + str('%02d'% StartDate.month) + '-' + str('%02d'% StartDate.day)
+File_Date = str(now.year) + str('%02d'% now.month) + str('%02d'% now.day)
 
 # Run SOQL to get data
 BKdata1 = sf.query("SELECT Owner.Name, Owner.Email, nihrm__Account__r.Name, nihrm__Property__c, Name, nihrm__ArrivalDate__c, nihrm__AgreedGuestroomRevenueTotal__c, nihrm__AgreedRoomnightsTotal__c, nihrm__BookingStatus__c\
@@ -36,13 +41,15 @@ BKdata2 = stripForce.stripJunkSimpleSalesforce(BKdata1)
 # Sorting the order for the columns
 index = ['nihrm__Property__c', 'Owner.Name', 'nihrm__Account__r.Name', 'Name', 'nihrm__AgreedRoomnightsTotal__c', 'nihrm__AgreedGuestroomRevenueTotal__c', 'nihrm__ArrivalDate__c', 'nihrm__BookingStatus__c', 'Owner.Email']
 BKdata3 = pd.DataFrame((pd.DataFrame.from_dict(BKdata2)), columns = index)
-# Add Owner Email to EmailList and take out the column
+# Add Owner Email to EmailList and then take out from the column
 EmailList = BKdata3['Owner.Email'].tolist()
 del BKdata3['Owner.Email']
+# Change column header
 BKdata3.columns = ['Property', 'Booking Owner', 'Account', 'Post As', 'Agreed RNs', 'Agreed RN Revenue', 'Arrival', 'Status']
 
 # Transfer data into excel file
-writer = pd.ExcelWriter(Current_Date + 'Audit_Booking_with_Past_Arrival_Date_P_and_T' + '.xlsx', engine='xlsxwriter')
+ExcelPath = FilePath + File_Date + '_Audit_Booking_with_Past_Arrival_Date_P_and_T' + '.xlsx'
+writer = pd.ExcelWriter(ExcelPath, engine='xlsxwriter')
 BKdata3.to_excel(writer, index=False, sheet_name='Past Arrival Date')
 
 # Adjust the column width (Copied from Stackoverflow: TrigonaMinima)
@@ -54,3 +61,18 @@ for i, col in enumerate(BKdata3.columns):
 writer.save()
 
 # Send via Outlook
+def SendEmail():
+    mail = outlook.CreateItem(0)
+    mail.To = ';'.join(EmailList)
+    mail.CC = ';'.join(password.CCList)
+    mail.Subject = 'Audit: Events (T and P) with Past Arrival Date'
+    # TODO: Change email sender if change person to send
+    mail.HtmlBody = "<html><body> <p>Dear all,</p><p>Please find the attachment with the list of <strong>Prospect and Tentative bookings</strong> where the <strong><em><u>Arrival Date</u></em>\
+                    </strong> had past already.</p><p>Kindly either <u>Turn Down</u> the booking or change the Arrival Date if necessary.</p> <p>Thank you!</p> \
+                    <br> <p><strong>Patrick Leong</strong></p> </body></html>"
+    mail.Attachments.Add(ExcelPath)
+    mail.send
+    
+# Send email to booking owner if EmailList is larger than 0
+if len(EmailList) > 0:
+    SendEmail()
