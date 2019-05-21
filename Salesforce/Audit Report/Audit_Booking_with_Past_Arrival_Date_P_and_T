@@ -1,0 +1,42 @@
+#! python3
+# Audit_Booking_with_Past_Arrival_Date_P_and_T.py - run data from salesforce for Past Arrival Date with P and
+# T status and send email to booking owner
+
+from simple_salesforce import Salesforce, SalesforceLogin
+import requests, password, datetime, os.path
+import stripJunkSimpleSalesforce as stripForce
+import pandas as pd
+import win32com.client as win32
+
+
+# Salesforce Login info
+Username = password.Username
+Password = password.Password
+securitytoken = password.securitytoken
+
+# Change proxies and ports
+proxies = {"http": "http://10.96.250.10:80", "https":"https://10.96.250.10:80"}
+
+# Login to Salesforce
+sf = Salesforce(instance='na1.salesforce.com', session_id='', proxies=proxies, username = Username, password= Password, security_token = securitytoken)
+session = requests.Session()
+
+# Get Date for 90 days later
+now = datetime.datetime.now()
+StartDate = now - datetime.timedelta(days=90)
+Current_Date = str(now.year) + '-' + str('%02d'% now.month) + '-' + str('%02d'% now.day)
+Start_Date = str(StartDate.year) + '-' + str('%02d'% StartDate.month) + '-' + str('%02d'% StartDate.day)
+
+# Run SOQL to get data
+BKdata1 = sf.query("SELECT Owner.Name, Owner.Email, nihrm__Account__r.name, nihrm__Property__c, Name, nihrm__ArrivalDate__c, nihrm__AgreedGuestroomRevenueTotal__c, nihrm__AgreedRoomnightsTotal__c, nihrm__BookingStatus__c\
+                  FROM nihrm__Booking__c \
+                  WHERE (nihrm__ArrivalDate__c <= TODAY AND nihrm__ArrivalDate__c >= " + str(Start_Date) + ") AND (nihrm__BookingStatus__c IN ('Prospect', 'Tentative'))")
+# Convert the data to a readable format
+BKdata2 = stripForce.stripJunkSimpleSalesforce(BKdata1)
+# Sorting the order for the columns
+index = ['nihrm__Property__c', 'Owner.Name', 'nihrm__Account__r.name', 'Name', 'nihrm__AgreedRoomnightsTotal__c', 'nihrm__AgreedGuestroomRevenueTotal__c', 'nihrm__ArrivalDate__c', 'nihrm__BookingStatus__c']
+BKdata3 = pd.DataFrame((pd.DataFrame.from_dict(BKdata2)), columns = index)
+EmailList = BKdata3['Owner.Email'].tolist()
+print(BKdata3)
+print(EmailList)
+
