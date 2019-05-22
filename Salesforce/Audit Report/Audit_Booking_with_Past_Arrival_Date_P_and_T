@@ -9,6 +9,7 @@ import pandas as pd
 import win32com.client as win32
 outlook = win32.Dispatch("Outlook.Application")
 
+
 # Excel SaveAs file path
 year = datetime.datetime.today().year
 FilePath = 'I:\\10-Sales\\Delphi\\Audit_Info\\Audits\\MPE\\' + str(year) + '\\Booking\\Booking (T and P) with Past Arrival Date\\'
@@ -48,7 +49,7 @@ del BKdata3['Owner.Email']
 BKdata3.columns = ['Property', 'Booking Owner', 'Account', 'Post As', 'Agreed RNs', 'Agreed RN Revenue', 'Arrival', 'Status']
 
 # Transfer data into excel file
-ExcelPath = FilePath + File_Date + '_Audit_Booking_with_Past_Arrival_Date_P_and_T' + '.xlsx'
+ExcelPath = FilePath + File_Date + '_Audit Bookings (T and P) with Past Arrival Date' + '.xlsx'
 writer = pd.ExcelWriter(ExcelPath, engine='xlsxwriter')
 BKdata3.to_excel(writer, index=False, sheet_name='Past Arrival Date')
 
@@ -66,13 +67,23 @@ def SendEmail():
     mail.To = ';'.join(EmailList)
     mail.CC = ';'.join(password.CCList)
     mail.Subject = 'Audit: Events (T and P) with Past Arrival Date'
-    # TODO: Change email sender if change person to send
-    mail.HtmlBody = "<html><body> <p>Dear all,</p><p>Please find the attachment with the list of <strong>Prospect and Tentative bookings</strong> where the <strong><em><u>Arrival Date</u></em>\
-                    </strong> had past already.</p><p>Kindly either <u>Turn Down</u> the booking or change the Arrival Date if necessary.</p> <p>Thank you!</p> \
-                    <br> <p><strong>Patrick Leong</strong></p> </body></html>"
     mail.Attachments.Add(ExcelPath)
-    mail.send
+    # Set email to High Importance
+    mail.Importance = 2
+    
+    # Add Signature to Email first
+    mail.GetInspector
+    # Message Body
+    MessageBody = "<html><body> <p>Dear all,</p><p>Please find the attachment with the list of <strong>Prospect and Tentative bookings</strong> where the <strong><em><u>Arrival Date</u></em>\
+                    </strong> had past already.</p><p>Kindly either <u>Turn Down</u> the booking or change the Arrival Date if necessary.</p> <p>Thank you!</p> </body></html>"
+    # Find and replace to add Message Body to HTML text
+    index = mail.HTMLbody.find('>', mail.HTMLbody.find('<body')) 
+    mail.HTMLbody = mail.HTMLbody[:index + 1] + MessageBody + mail.HTMLbody[index + 1:]
+    mail.SaveAs(Path='I:\\10-Sales\\Personal Folder\\Admin & Assistant Team\\Patrick Leong\\Python Code\\Audit Report\\Email.msg')
+    #mail.send
     
 # Send email to booking owner if EmailList is larger than 0
+EmailList = list(set(EmailList))
 if len(EmailList) > 0:
+    print(len(EmailList))
     SendEmail()
