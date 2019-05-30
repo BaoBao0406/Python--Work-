@@ -104,7 +104,7 @@ while True:
                 # Use keyWord to replace the [Image] in HTML text
                 keyWord2 = re.compile(r'(\[Image%s\])' % ImgNum)
                 html = keyWord2.sub("<img src=""cid:MyId%s"">" % ImgNum, html)
-                attachment = mail.Attachments.Add(os.getcwd() + "\\Image\\Image%s.jpg" % ImgNum)
+                attachment = mail.Attachments.Add(os.getcwd() + "\\Image\\Image%s.jpg" % ImgNum, 0x5, 0)
                 attachment.PropertyAccessor.SetProperty("http://schemas.microsoft.com/mapi/proptag/0x3712001F", "MyId%s" % ImgNum)
                 ImgNum += 1
         # Add Image for Country to html body
@@ -112,7 +112,7 @@ while True:
             CountryImgNum = 1
             for image in CountryImageList:
                 html = keyWordCountry.sub("<img src=""cid:MyId%s"">" % ImgNum, html)
-                attachment = mail.Attachments.Add("I:\\10-Sales\\Personal Folder\\Admin & Assistant Team\\Patrick Leong\\Python Code\\BatchEmailMerge\\Image\\Image%s%s.jpg" % (str(ws1.Cells(x, 4).Value), str(CountryImgNum)))
+                attachment = mail.Attachments.Add("I:\\10-Sales\\Personal Folder\\Admin & Assistant Team\\Patrick Leong\\Python Code\\BatchEmailMerge\\Image\\Image%s%s.jpg" % (str(ws1.Cells(x, 4).Value), str(CountryImgNum)), 0x5, 0)
                 attachment.PropertyAccessor.SetProperty("http://schemas.microsoft.com/mapi/proptag/0x3712001F", "MyId%s" % ImgNum)
                 CountryImgNum += 1
                 ImgNum += 1
