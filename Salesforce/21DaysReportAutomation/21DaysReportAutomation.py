@@ -2,32 +2,27 @@
 # 21DaysReportAutomation.py - run data from salesforce, get data and export to excel. Send the excel
 # with distribution list.
 
-from simple_salesforce import Salesforce, SalesforceLogin
+from simple_salesforce import Salesforce
 import requests, password, datetime, os.path
 import stripJunkSimpleSalesforce as stripForce
 import pandas as pd
 import win32com.client as win32
 from time import sleep
 excel = win32.gencache.EnsureDispatch('Excel.Application')
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
-from email.header import Header
+outlook = win32.Dispatch("Outlook.Application")
 
-path = 'D:\\Python\\Additional\\Salesforce\\21DaysReport\\'
+path = 'I:\\10-Sales\\01_Sales_Reports\\21 Days Report\\'
 
 # Salesforce Login info
-Username = password.username
-Password = password.password
-SecurityToken = password.securitytoken
+Username = password.Username
+Password = password.Password
+securitytoken = password.securitytoken
 
-# Email Login info
-Email = password.Email
-Epassword = password.Epassword
+# Change proxies and ports
+proxies = {"http": "http://10.96.250.10:80", "https":"https://10.96.250.10:80"}
 
 # Login to Salesforce
-session_id, instance = SalesforceLogin(username= Username, password= Password, security_token= SecurityToken)
-sf= Salesforce(instance=instance, session_id=session_id)
+sf = Salesforce(instance='na1.salesforce.com', session_id='', proxies=proxies, username = Username, password= Password, security_token = securitytoken)
 session = requests.Session()
 
 # Get Date for 21 days later
@@ -39,6 +34,14 @@ End_Date = str(EndDate.year) + '-' + str('%02d'% EndDate.month) + '-' + str('%02
 Status = ['Prospect', 'Tentative']
 TabName = ['PROS', 'TENT']
 
+# Adjust the column width (Credit To Stackoverflow: TrigonaMinima)
+def AdjustColumnWidth(Sheet, Name):
+    worksheet = writer.sheets[Sheet]
+    for i, col in enumerate(Name.columns):
+        column_len = Name[col].astype(str).str.len().max()
+        column_len = max(column_len, len(col)) + 2
+        worksheet.set_column(i, i, column_len)
+
 # Run for both Prospect and Tentative status for Booking tab
 for s, n in zip(Status, TabName):
     # Booking tab - Use SOQL languauges to export the Booking tab from Salesforce
@@ -49,14 +52,21 @@ for s, n in zip(Status, TabName):
     BKdata2 = stripForce.stripJunkSimpleSalesforce(BKdata1)
     # Sorting the order for the columns
     index = ['Owner.Name', 'nihrm__Property__c', 'nihrm__Account__r.Name', 'nihrm__Agency__r.Name', 'Name', 'nihrm__ArrivalDate__c', 'nihrm__DepartureDate__c', \
-             'nihrm__BookingTypeName__c', 'nihrm__ForecastRoomnightsTotal__c', 'nihrm__DecisionDate__c', 'nihrm__BookedDate__c', 'Owner.Email']
-    BKdata3 = pd.DataFrame.from_dict(BKdata2)
-    BKdata4 = pd.DataFrame(BKdata3, columns = index)
+              'nihrm__ForecastRoomnightsTotal__c', 'nihrm__DecisionDate__c', 'nihrm__BookedDate__c', 'nihrm__BookingTypeName__c', 'Owner.Email']
+    BKdata3 = pd.DataFrame(pd.DataFrame.from_dict(BKdata2), columns = index)
     # Add to email distribution list
     if n == "PROS":
-        ProsEmailList = BKdata4['Owner.Email'].tolist()
+        ProsEmailList = BKdata3['Owner.Email'].tolist()
     elif n == "TENT":
-        TentEmailList = BKdata4['Owner.Email'].tolist()
+        TentEmailList = BKdata3['Owner.Email'].tolist()
+    del BKdata3['Owner.Email']
+    # Change column header
+    BKdata3.columns = ['Booking Owner', 'Property', 'Account', 'Agency', 'Post As', 'Arrival', 'Departure', 'Roomnights', 'Decision Due', 'Booked Date', 'Booking Type']
+    # Transfer the data to excel file
+    writer = pd.ExcelWriter(str(s) + '.xlsx', engine='xlsxwriter')
+    BKdata3.to_excel(writer, index=False, sheet_name=n, startrow=2)
+    # Adjust Column width
+    AdjustColumnWidth(n, BKdata3)
     
     # Property (Location) Code to exclude in the report
     ExcludeProp = "('FSHM', 'SGMH', 'SANDS', 'TSRM')"
@@ -68,15 +78,15 @@ for s, n in zip(Status, TabName):
     RBdata2 = stripForce.stripJunkSimpleSalesforce(RBdata1)
     # Sorting the order for the columns
     index = ['nihrm__Location__r.Name', 'nihrm__Booking__r.Name', 'Name', 'Owner.Name', 'nihrm__Booking__r.nihrm__BookingTypeName__c', 'nihrm__RoomBlockStatus__c', 'nihrm__StartDate__c', 'nihrm__ForecastRoomnightsTotal__c']
-    RBdata3 = pd.DataFrame.from_dict(RBdata2)
-    RBdata4 = pd.DataFrame(RBdata3, columns = index)
-    
+    RBdata3 = pd.DataFrame(pd.DataFrame.from_dict(RBdata2), columns = index)
+    RBdata3.columns = ['Property', 'Post As', 'Room Block Name', 'Booking Owner', 'Booking Type', 'Status', 'Start Date', 'Roomnights']
     # Transfer the data to excel file
-    writer = pd.ExcelWriter(str(s) + '.xlsx', engine='xlsxwriter')
-    BKdata4.to_excel(writer, index=False, sheet_name=n, startrow=2)
-    RBdata4.to_excel(writer, index=False, sheet_name="RN Block by Property", startrow=2)
-
-sleep(10)
+    RBdata3.to_excel(writer, index=False, sheet_name="RN Block by Property", startrow=2)
+    # Adjust Column width
+    AdjustColumnWidth("RN Block by Property", RBdata3)
+    writer.save()
+    sleep(10)
+"""
 for s, n in zip(Status, TabName):    
     try:
         # Copy the Worksheet from (.xlsx) to Working File .(xlsm)
@@ -94,38 +104,26 @@ for s, n in zip(Status, TabName):
         wb2.Close(SaveChanges=True)
         wb1.Close()
         excel.Quit()
-    
-# Send email according to the distribution list
-smtpObj = smtplib.SMTP('smtp.gmail.com', 587)
-smtpObj.ehlo()
-smtpObj.starttls()
-smtpObj.login(Email, Epassword)
 
-# Function for P and T status
-def Email_Sent_PROSnTENT(Status, Email, DistributionList_To, DistributionList_Cc, EmailBody, FilePath):
-    fromaddr = Email
-    toaddr = DistributionList_To
-    cc = DistributionList_Cc
+# Send via Outlook
+def SendEmail(EmailList):
+    mail = outlook.CreateItem(0)
+    mail.To = ';'.join(EmailList)
+    mail.CC = ';'.join(password.CCList)
+    mail.Subject = ''
+    mail.Attachments.Add(ExcelPath)
 
-    message = MIMEMultipart()
-    message.attach(MIMEText(EmailBody, 'html', 'utf-8'))
-    message['From'] = fromaddr
-    message['To'] = ','.join(toaddr)
-    message['Cc'] = ','.join(cc)
-
-    Subject = '21 Days ' + str(Status) + ' Report'
-    message['Subject'] = Header(Subject, 'utf-8')
-
-    att1 = MIMEText(open(FilePath, 'rb').read(), 'base64', 'utf-8')
-    att1["Content-Type"] = 'application/octet-steam'
-    att1["Content-Disposition"] = 'attachment; filename="21Days' + str(Status) + '.xlsm"'
-    message.attach(att1)
-
-    try:
-        smtpObj.sendmail(message['From'], [message['To'], message['Cc']], message.as_string())
-        print('Email sent')
-    except smtplib.SMTPException:
-        print("Failed")
+    # Add Signature to Email first
+    mail.GetInspector
+    # Message Body
+    MessageBody = "<p>Dear All</p><p><br /> Please refer to the attached 21 days PROSPECT business report. This report is run on a daily basis and sent to all DOS to follow up with their sales team.</p> \
+                   <p>Note that there are two tabs <strong>&ldquo;PROS&rdquo; </strong>shows the main property of each group with total Room Nights and <strong>&ldquo;Room Block by Property&rdquo;</strong> in the report.</p> \
+                   <p><br /> Any question or problem, please feel free to contact the Systems Team.</p>"
+    # Find and replace to add Message Body to HTML text
+    index = mail.HTMLbody.find('>', mail.HTMLbody.find('<body')) 
+    mail.HTMLbody = mail.HTMLbody[:index + 1] + MessageBody + mail.HTMLbody[index + 1:]
+    mail.SaveAs(Path='I:\\10-Sales\\01_Sales_Reports\\21 Days Report\\Python Code\\Testing\\Email.msg')
+    #mail.send
 
 # Loop for PROS and TENT status using different DistributionList and Body to sent
 for s in Status:
@@ -147,3 +145,4 @@ for s in Status:
 
 # TODO: Send follow up email to manager who need to follow up on the booking
    # TODO: Use the email template as the body
+"""
