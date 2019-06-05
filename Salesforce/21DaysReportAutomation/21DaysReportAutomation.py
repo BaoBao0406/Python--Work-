@@ -104,45 +104,65 @@ for s, n in zip(Status, TabName):
         wb2.Close(SaveChanges=True)
         wb1.Close()
         excel.Quit()
-
-# Send via Outlook
-def SendEmail(EmailList):
-    mail = outlook.CreateItem(0)
-    mail.To = ';'.join(EmailList)
-    mail.CC = ';'.join(password.CCList)
-    mail.Subject = ''
-    mail.Attachments.Add(ExcelPath)
-
+"""
+# Function to Create Prospect Email to send to DOS and SM
+def EmailPROS(ToList, CCList, FollowUp):
+    mail.To = ';'.join(ToList)
+    mail.CC = ';'.join(CCList)
+    mail.Subject = '21 days report Prospect'
+    mail.Attachments.Add(path + 'Prospect.xlsx')
     # Add Signature to Email first
     mail.GetInspector
     # Message Body
-    MessageBody = "<p>Dear All</p><p><br /> Please refer to the attached 21 days PROSPECT business report. This report is run on a daily basis and sent to all DOS to follow up with their sales team.</p> \
-                   <p>Note that there are two tabs <strong>&ldquo;PROS&rdquo; </strong>shows the main property of each group with total Room Nights and <strong>&ldquo;Room Block by Property&rdquo;</strong> in the report.</p> \
-                   <p><br /> Any question or problem, please feel free to contact the Systems Team.</p>"
+    if FollowUp == False:
+        MessageBody = "<p>Dear All</p><p><br /> Please refer to the attached 21 days PROSPECT business report. This report is run on a daily basis and sent to all DOS to follow up with their sales team.</p> \
+                       <p>Note that there are two tabs <strong>&ldquo;PROS&rdquo; </strong>shows the main property of each group with total Room Nights and <strong>&ldquo;Room Block by Property&rdquo;</strong> in the report.</p> \
+                       <p> Any question or problem, please feel free to contact the Systems Team.</p>"
+        Filename = 'PEmail.msg'
+    elif FollowUp == True:
+        MessageBody = "<p>Dear All</p> <p><br /> Please refer to the attached 21 days PROSPECT business report.&nbsp;Please follow up on your booking(s) with expired decision due dates</p> \
+                       <p>Note that there are two tabs <strong>&ldquo;PROS&rdquo; </strong>shows the main property of each group with total Room Nights and <strong>&ldquo;Room Block by Property&rdquo;</strong> in the report.</p> <p>&nbsp;</p>"
+        # Set email to High Importance
+        mail.Importance = 2
+        Filename = 'PEmailFollowUp.msg'
     # Find and replace to add Message Body to HTML text
     index = mail.HTMLbody.find('>', mail.HTMLbody.find('<body')) 
     mail.HTMLbody = mail.HTMLbody[:index + 1] + MessageBody + mail.HTMLbody[index + 1:]
-    mail.SaveAs(Path='I:\\10-Sales\\01_Sales_Reports\\21 Days Report\\Python Code\\Testing\\Email.msg')
-    #mail.send
+    mail.SaveAs(Path='I:\\10-Sales\\01_Sales_Reports\\21 Days Report\\Python Code\\Testing\\' + Filename)
+    mail.Close(0)
 
-# Loop for PROS and TENT status using different DistributionList and Body to sent
-for s in Status:
-    if s == "Prospect":
-        DistributionList_To = password.DistributionList_To_P
-        DistributionList_Cc = password.DistributionList_Cc_P
-        EmailBody = password.EmailBody_P
-        
-    elif s == "Tentative":
-        DistributionList_To = password.DistributionList_To_T
-        DistributionList_Cc = password.DistributionList_Cc_T
-        EmailBody = password.EmailBody_T
-    
-    FilePath = path + Current_Date + '21Days' + str(s) + 'Report.xlsm'
-    if os.path.exists(FilePath):
-        Email_Sent_PROSnTENT(s, Email, DistributionList_To, DistributionList_Cc, EmailBody, FilePath)
-    else:
-        continue              
+# Function to Create Tentative Email to send to DOS and SM
+def EmailTENT(ToList, CCList, FollowUp):
+    mail.To = ';'.join(ToList)
+    mail.CC = ';'.join(CCList)
+    mail.Subject = '21 days report Tentative'
+    mail.Attachments.Add(path + 'Tentative.xlsx')
+    # Add Signature to Email first
+    mail.GetInspector
+    # Message Body
+    if FollowUp == False:
+        MessageBody = "<p>Dear All<br /> <br /> Please refer to the attached 21 days short term business report. This report is run on a daily basis and sent to all DOS follow up and to other appropriate departments for reference. <br />\
+                       <br /> The DOS is responsible for ensuring the sales managers confirm the groups by the decision due dates listed.<br /> <br /> Any contract received for groups on this list must be routed short term, to all the appropriate departments, by the sales assistant, ASAP. \
+                       <br /> <br /> Any assistant who have problem with short term routing, please feel free to contact the Systems Team.</p> <p>&nbsp;</p> <p>Please note: These are all the Tentative groups that are arriving within the next 21 days.</p> \
+                       <p>There are two tabs &ldquo;<strong>Tentative Booking</strong>&rdquo; shows the main property of each group with total Room Nights and <strong>&ldquo;Room Block by Property&rdquo;</strong> shows total Room Nights by property per each group in the report.</p>"
+    elif FollowUp == True:
+        MessageBody = "<p>Dear All</p> <p><br /> Please refer to the attached 21 days PROSPECT business report.&nbsp;Please follow up on your booking(s) with expired decision due dates</p> \
+                       <p>Note that there are two tabs <strong>&ldquo;PROS&rdquo; </strong>shows the main property of each group with total Room Nights and <strong>&ldquo;Room Block by Property&rdquo;</strong> in the report.</p> <p>&nbsp;</p>"
+    # Find and replace to add Message Body to HTML text
+    index = mail.HTMLbody.find('>', mail.HTMLbody.find('<body')) 
+    mail.HTMLbody = mail.HTMLbody[:index + 1] + MessageBody + mail.HTMLbody[index + 1:]
+    mail.SaveAs(Path='I:\\10-Sales\\01_Sales_Reports\\21 Days Report\\Python Code\\Testing\\TEmail.msg')
+    mail.Close(0)
 
-# TODO: Send follow up email to manager who need to follow up on the booking
-   # TODO: Use the email template as the body
-"""
+# Send two Emails to DOS and SM if Prospect report is larger than 0
+if len(ProsEmailList) > 0:
+    mail = outlook.CreateItem(0)
+    EmailPROS(password.ToListforPROS, password.CCListforPROS, False)
+    mail = outlook.CreateItem(0)
+    EmailPROS(ProsEmailList, password.CCListforPROS, True)
+# Send two Emails to DOS and SM if Tentative report is larger than 0
+if len(TentEmailList) > 0:
+    mail = outlook.CreateItem(0)
+    EmailTENT(password.ToListforTENT, password.CCListforTENT, False)
+    mail = outlook.CreateItem(0)
+    EmailTENT(TentEmailList, password.CCListforPROS, True)
