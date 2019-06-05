@@ -3,7 +3,7 @@
 # with distribution list.
 
 from simple_salesforce import Salesforce
-import requests, password, datetime, os.path
+import requests, datetime, os.path, password
 import stripJunkSimpleSalesforce as stripForce
 import pandas as pd
 import win32com.client as win32
@@ -12,6 +12,7 @@ excel = win32.gencache.EnsureDispatch('Excel.Application')
 outlook = win32.Dispatch("Outlook.Application")
 
 path = 'I:\\10-Sales\\01_Sales_Reports\\21 Days Report\\'
+path1 = 'I:\\10-Sales\\01_Sales_Reports\\21 Days Report\\Python Code\\'
 
 # Salesforce Login info
 Username = password.Username
@@ -87,6 +88,7 @@ for s, n in zip(Status, TabName):
     writer.save()
     sleep(10)
 """
+# Convert to xlsm and excute Marco
 for s, n in zip(Status, TabName):    
     try:
         # Copy the Worksheet from (.xlsx) to Working File .(xlsm)
@@ -110,7 +112,7 @@ def EmailPROS(ToList, CCList, FollowUp):
     mail.To = ';'.join(ToList)
     mail.CC = ';'.join(CCList)
     mail.Subject = '21 days report Prospect'
-    mail.Attachments.Add(path + 'Prospect.xlsx')
+    mail.Attachments.Add(path1 + 'Prospect.xlsx')
     # Add Signature to Email first
     mail.GetInspector
     # Message Body
@@ -129,6 +131,7 @@ def EmailPROS(ToList, CCList, FollowUp):
     index = mail.HTMLbody.find('>', mail.HTMLbody.find('<body')) 
     mail.HTMLbody = mail.HTMLbody[:index + 1] + MessageBody + mail.HTMLbody[index + 1:]
     mail.SaveAs(Path='I:\\10-Sales\\01_Sales_Reports\\21 Days Report\\Python Code\\Testing\\' + Filename)
+    #mail.send
     mail.Close(0)
 
 # Function to Create Tentative Email to send to DOS and SM
@@ -136,7 +139,7 @@ def EmailTENT(ToList, CCList, FollowUp):
     mail.To = ';'.join(ToList)
     mail.CC = ';'.join(CCList)
     mail.Subject = '21 days report Tentative'
-    mail.Attachments.Add(path + 'Tentative.xlsx')
+    mail.Attachments.Add(path1 + 'Tentative.xlsx')
     # Add Signature to Email first
     mail.GetInspector
     # Message Body
@@ -146,12 +149,13 @@ def EmailTENT(ToList, CCList, FollowUp):
                        <br /> <br /> Any assistant who have problem with short term routing, please feel free to contact the Systems Team.</p> <p>&nbsp;</p> <p>Please note: These are all the Tentative groups that are arriving within the next 21 days.</p> \
                        <p>There are two tabs &ldquo;<strong>Tentative Booking</strong>&rdquo; shows the main property of each group with total Room Nights and <strong>&ldquo;Room Block by Property&rdquo;</strong> shows total Room Nights by property per each group in the report.</p>"
     elif FollowUp == True:
-        MessageBody = "<p>Dear All</p> <p><br /> Please refer to the attached 21 days PROSPECT business report.&nbsp;Please follow up on your booking(s) with expired decision due dates</p> \
-                       <p>Note that there are two tabs <strong>&ldquo;PROS&rdquo; </strong>shows the main property of each group with total Room Nights and <strong>&ldquo;Room Block by Property&rdquo;</strong> in the report.</p> <p>&nbsp;</p>"
+        MessageBody = "<p>Dear All</p> <p><br /> Please refer to the attached 21 days TENTATIVE business report.&nbsp;Please follow up on your booking(s) with expired decision due dates</p> \
+                       <p>Note that there are two tabs <strong>&ldquo;TENT&rdquo; </strong>shows the main property of each group with total Room Nights and <strong>&ldquo;Room Block by Property&rdquo;</strong> in the report.</p> <p>&nbsp;</p>"
     # Find and replace to add Message Body to HTML text
     index = mail.HTMLbody.find('>', mail.HTMLbody.find('<body')) 
     mail.HTMLbody = mail.HTMLbody[:index + 1] + MessageBody + mail.HTMLbody[index + 1:]
     mail.SaveAs(Path='I:\\10-Sales\\01_Sales_Reports\\21 Days Report\\Python Code\\Testing\\TEmail.msg')
+    #mail.send
     mail.Close(0)
 
 # Send two Emails to DOS and SM if Prospect report is larger than 0
