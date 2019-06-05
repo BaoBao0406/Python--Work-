@@ -1,1 +1,1 @@
-# Python for work
+# Python script
