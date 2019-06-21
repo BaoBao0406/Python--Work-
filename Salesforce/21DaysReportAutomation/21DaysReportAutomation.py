@@ -12,7 +12,6 @@ excel = win32.gencache.EnsureDispatch('Excel.Application')
 outlook = win32.Dispatch("Outlook.Application")
 
 path = 'I:\\10-Sales\\01_Sales_Reports\\21 Days Report\\'
-path1 = 'I:\\10-Sales\\01_Sales_Reports\\21 Days Report\\Python Code\\'
 
 # Salesforce Login info
 Username = password.Username
@@ -31,6 +30,7 @@ now = datetime.datetime.now()
 EndDate = now + datetime.timedelta(days=21)
 Current_Date = str(now.year) + '-' + str('%02d'% now.month) + '-' + str('%02d'% now.day)
 End_Date = str(EndDate.year) + '-' + str('%02d'% EndDate.month) + '-' + str('%02d'% EndDate.day)
+FileDate = str(now.year) + str('%02d'% now.month) + str('%02d'% now.day)
 
 Status = ['Prospect', 'Tentative']
 TabName = ['PROS', 'TENT']
@@ -45,6 +45,7 @@ def AdjustColumnWidth(Sheet, Name):
 
 # Run for both Prospect and Tentative status for Booking tab
 for s, n in zip(Status, TabName):
+    # Booking tab
     # Booking tab - Use SOQL languauges to export the Booking tab from Salesforce
     BKdata1 = sf.query("SELECT Owner.Name, Owner.Email, nihrm__Account__r.name, nihrm__Agency__r.name, nihrm__Property__c, Name, nihrm__ArrivalDate__c, nihrm__DepartureDate__c, nihrm__BookingTypeName__c, nihrm__ForecastRoomnightsTotal__c, nihrm__DecisionDate__c, nihrm__BookedDate__c \
                        FROM nihrm__Booking__c \
@@ -63,12 +64,8 @@ for s, n in zip(Status, TabName):
     del BKdata3['Owner.Email']
     # Change column header
     BKdata3.columns = ['Booking Owner', 'Property', 'Account', 'Agency', 'Post As', 'Arrival', 'Departure', 'Roomnights', 'Decision Due', 'Booked Date', 'Booking Type']
-    # Transfer the data to excel file
-    writer = pd.ExcelWriter(str(s) + '.xlsx', engine='xlsxwriter')
-    BKdata3.to_excel(writer, index=False, sheet_name=n, startrow=2)
-    # Adjust Column width
-    AdjustColumnWidth(n, BKdata3)
-    
+
+    # Room Block tab
     # Property (Location) Code to exclude in the report
     ExcludeProp = "('FSHM', 'SGMH', 'SANDS', 'TSRM')"
     # Room Block tab - Use SOQL languauges to export the Room Block tab from Salesforce
@@ -81,38 +78,36 @@ for s, n in zip(Status, TabName):
     index = ['nihrm__Location__r.Name', 'nihrm__Booking__r.Name', 'Name', 'Owner.Name', 'nihrm__Booking__r.nihrm__BookingTypeName__c', 'nihrm__RoomBlockStatus__c', 'nihrm__StartDate__c', 'nihrm__ForecastRoomnightsTotal__c']
     RBdata3 = pd.DataFrame(pd.DataFrame.from_dict(RBdata2), columns = index)
     RBdata3.columns = ['Property', 'Post As', 'Room Block Name', 'Booking Owner', 'Booking Type', 'Status', 'Start Date', 'Roomnights']
+    
+    """
+    # Sumif function for Roomnights in Room Block tab into Booking tab
+    x = 0
+    for i, j in BKdata3.iterrows():
+        RN = RBdata3.groupby(['Post As'])['Roomnights'].sum()
+        if RN.index[x] == j['Post As']:
+            #print(RN.values[x])
+            BKdata3.at[i, 'Roomnights'] = RN.values[x]
+        x += 1
+    """
     # Transfer the data to excel file
-    RBdata3.to_excel(writer, index=False, sheet_name="RN Block by Property", startrow=2)
+    writer = pd.ExcelWriter(path + FileDate + '_21 days report ' + str(s) + '.xlsx', engine='xlsxwriter')
+    BKdata3.to_excel(writer, index=False, sheet_name=n)
+    # Adjust Column width
+    AdjustColumnWidth(n, BKdata3)
+    
+    # Transfer the data to excel file
+    RBdata3.to_excel(writer, index=False, sheet_name="RN Block by Property")
     # Adjust Column width
     AdjustColumnWidth("RN Block by Property", RBdata3)
     writer.save()
     sleep(10)
-"""
-# Convert to xlsm and excute Marco
-for s, n in zip(Status, TabName):    
-    try:
-        # Copy the Worksheet from (.xlsx) to Working File .(xlsm)
-        wb1 = excel.Workbooks.Open(path + s + '.xlsx')
-    except Exception as e:
-        continue
-    else:
-        wb2 = excel.Workbooks.Open(path + '21Days' + s + '.xlsm')
-        wsBK = wb1.Worksheets(n)
-        wsBK.Copy(Before=wb2.Worksheets('Sheet1'))
-        wsRB = wb1.Worksheets('RN Block by Property')
-        wsRB.Copy(Before=wb2.Worksheets('Sheet1'))
-        # Run the excel marco function to format the excel file
-        #excel.Application.Run('21Days' + s + "!Module1.Step1")
-        wb2.Close(SaveChanges=True)
-        wb1.Close()
-        excel.Quit()
-"""
+
 # Function to Create Prospect Email to send to DOS and SM
 def EmailPROS(ToList, CCList, FollowUp):
     mail.To = ';'.join(ToList)
     mail.CC = ';'.join(CCList)
     mail.Subject = '21 days report Prospect'
-    mail.Attachments.Add(path1 + 'Prospect.xlsx')
+    mail.Attachments.Add(path + FileDate + '_21 days report Prospect.xlsx')
     # Add Signature to Email first
     mail.GetInspector
     # Message Body
@@ -120,26 +115,26 @@ def EmailPROS(ToList, CCList, FollowUp):
         MessageBody = "<p>Dear All</p><p><br /> Please refer to the attached 21 days PROSPECT business report. This report is run on a daily basis and sent to all DOS to follow up with their sales team.</p> \
                        <p>Note that there are two tabs <strong>&ldquo;PROS&rdquo; </strong>shows the main property of each group with total Room Nights and <strong>&ldquo;Room Block by Property&rdquo;</strong> in the report.</p> \
                        <p> Any question or problem, please feel free to contact the Systems Team.</p>"
-        Filename = 'PEmail.msg'
+        #Filename = 'PEmail.msg'
     elif FollowUp == True:
         MessageBody = "<p>Dear All</p> <p><br /> Please refer to the attached 21 days PROSPECT business report.&nbsp;Please follow up on your booking(s) with expired decision due dates</p> \
                        <p>Note that there are two tabs <strong>&ldquo;PROS&rdquo; </strong>shows the main property of each group with total Room Nights and <strong>&ldquo;Room Block by Property&rdquo;</strong> in the report.</p> <p>&nbsp;</p>"
         # Set email to High Importance
         mail.Importance = 2
-        Filename = 'PEmailFollowUp.msg'
+        #Filename = 'PEmailFollowUp.msg'
     # Find and replace to add Message Body to HTML text
     index = mail.HTMLbody.find('>', mail.HTMLbody.find('<body')) 
     mail.HTMLbody = mail.HTMLbody[:index + 1] + MessageBody + mail.HTMLbody[index + 1:]
-    mail.SaveAs(Path='I:\\10-Sales\\01_Sales_Reports\\21 Days Report\\Python Code\\Testing\\' + Filename)
-    #mail.send
-    mail.Close(0)
+    #mail.SaveAs(Path='I:\\10-Sales\\01_Sales_Reports\\21 Days Report\\Python Code\\Testing\\' + Filename)
+    mail.send
+
 
 # Function to Create Tentative Email to send to DOS and SM
 def EmailTENT(ToList, CCList, FollowUp):
     mail.To = ';'.join(ToList)
     mail.CC = ';'.join(CCList)
     mail.Subject = '21 days report Tentative'
-    mail.Attachments.Add(path1 + 'Tentative.xlsx')
+    mail.Attachments.Add(path + FileDate + '_21 days report Tentative.xlsx')
     # Add Signature to Email first
     mail.GetInspector
     # Message Body
@@ -148,15 +143,17 @@ def EmailTENT(ToList, CCList, FollowUp):
                        <br /> The DOS is responsible for ensuring the sales managers confirm the groups by the decision due dates listed.<br /> <br /> Any contract received for groups on this list must be routed short term, to all the appropriate departments, by the sales assistant, ASAP. \
                        <br /> <br /> Any assistant who have problem with short term routing, please feel free to contact the Systems Team.</p> <p>&nbsp;</p> <p>Please note: These are all the Tentative groups that are arriving within the next 21 days.</p> \
                        <p>There are two tabs &ldquo;<strong>Tentative Booking</strong>&rdquo; shows the main property of each group with total Room Nights and <strong>&ldquo;Room Block by Property&rdquo;</strong> shows total Room Nights by property per each group in the report.</p>"
+        #Filename = 'TEmail.msg'
     elif FollowUp == True:
         MessageBody = "<p>Dear All</p> <p><br /> Please refer to the attached 21 days TENTATIVE business report.&nbsp;Please follow up on your booking(s) with expired decision due dates</p> \
                        <p>Note that there are two tabs <strong>&ldquo;TENT&rdquo; </strong>shows the main property of each group with total Room Nights and <strong>&ldquo;Room Block by Property&rdquo;</strong> in the report.</p> <p>&nbsp;</p>"
+        #Filename = 'TEmailFollowUp.msg'
     # Find and replace to add Message Body to HTML text
     index = mail.HTMLbody.find('>', mail.HTMLbody.find('<body')) 
     mail.HTMLbody = mail.HTMLbody[:index + 1] + MessageBody + mail.HTMLbody[index + 1:]
-    mail.SaveAs(Path='I:\\10-Sales\\01_Sales_Reports\\21 Days Report\\Python Code\\Testing\\TEmail.msg')
-    #mail.send
-    mail.Close(0)
+    #mail.SaveAs(Path='I:\\10-Sales\\01_Sales_Reports\\21 Days Report\\Python Code\\Testing\\' + Filename)
+    mail.send
+
 
 # Send two Emails to DOS and SM if Prospect report is larger than 0
 if len(ProsEmailList) > 0:
@@ -168,5 +165,5 @@ if len(ProsEmailList) > 0:
 if len(TentEmailList) > 0:
     mail = outlook.CreateItem(0)
     EmailTENT(password.ToListforTENT, password.CCListforTENT, False)
-    mail = outlook.CreateItem(0)
-    EmailTENT(TentEmailList, password.CCListforPROS, True)
+    #mail = outlook.CreateItem(0)
+    #EmailTENT(TentEmailList, password.CCListforPROS, True)
