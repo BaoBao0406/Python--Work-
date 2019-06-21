@@ -58,9 +58,9 @@ for s, n in zip(Status, TabName):
     BKdata3 = pd.DataFrame(pd.DataFrame.from_dict(BKdata2), columns = index)
     # Add to email distribution list
     if n == "PROS":
-        ProsEmailList = BKdata3['Owner.Email'].tolist()
+        ProsEmailList = list(set(BKdata3['Owner.Email'].tolist()))
     elif n == "TENT":
-        TentEmailList = BKdata3['Owner.Email'].tolist()
+        TentEmailList = list(set(BKdata3['Owner.Email'].tolist()))
     del BKdata3['Owner.Email']
     # Change column header
     BKdata3.columns = ['Booking Owner', 'Property', 'Account', 'Agency', 'Post As', 'Arrival', 'Departure', 'Roomnights', 'Decision Due', 'Booked Date', 'Booking Type']
@@ -165,5 +165,5 @@ if len(ProsEmailList) > 0:
 if len(TentEmailList) > 0:
     mail = outlook.CreateItem(0)
     EmailTENT(password.ToListforTENT, password.CCListforTENT, False)
-    #mail = outlook.CreateItem(0)
-    #EmailTENT(TentEmailList, password.CCListforPROS, True)
+    mail = outlook.CreateItem(0)
+    EmailTENT(TentEmailList, password.CCListforPROS, True)
