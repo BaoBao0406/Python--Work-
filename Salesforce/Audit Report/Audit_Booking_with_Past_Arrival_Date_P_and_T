@@ -44,7 +44,7 @@ BKdata2 = stripJunkSimpleSalesforce(BKdata1)
 index = ['nihrm__Property__c', 'Owner.Name', 'nihrm__Account__r.Name', 'Name', 'nihrm__AgreedRoomnightsTotal__c', 'nihrm__AgreedGuestroomRevenueTotal__c', 'nihrm__ArrivalDate__c', 'nihrm__BookingStatus__c', 'Owner.Email']
 BKdata3 = pd.DataFrame((pd.DataFrame.from_dict(BKdata2)), columns = index)
 # Add Owner Email to EmailList and then take out from the column
-EmailList = BKdata3['Owner.Email'].tolist()
+EmailList = list(set(BKdata3['Owner.Email'].tolist()))
 del BKdata3['Owner.Email']
 # Change column header
 BKdata3.columns = ['Property', 'Booking Owner', 'Account', 'Post As', 'Agreed RNs', 'Agreed RN Revenue', 'Arrival', 'Status']
