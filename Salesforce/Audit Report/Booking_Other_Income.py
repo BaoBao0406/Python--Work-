@@ -40,6 +40,7 @@ BKdata1 = sf.query("SELECT nihrm__Booking__r.Owner.Name, nihrm__Booking__r.Owner
                     FROM nihrm__BookingOtherIncome__c \
                     WHERE (nihrm__Booking__r.nihrm__ArrivalDate__c <= TODAY AND nihrm__Booking__r.nihrm__ArrivalDate__c >= " + str(Start_Date) + ") AND (nihrm__Booking__r.nihrm__BookingStatus__c IN ('Prospect', 'Tentative'))")
                     #WHERE (nihrm__Booking__r.nihrm__ArrivalDate__c <= TODAY AND nihrm__Booking__r.nihrm__ArrivalDate__c >= " + str(Start_Date) + ")")
+                    
 # Convert the data to a readable format
 BKdata2 = stripJunkSimpleSalesforce(BKdata1)
 # Sorting the order for the columns
@@ -73,18 +74,22 @@ def SendEmail():
     mail.CC = ';'.join(password.CCList)
     mail.Subject = 'Booking Other Income Report'
     mail.Attachments.Add(ExcelPath)
-
-    
+    # Add image for Message Body
+    attachment = mail.Attachments.Add("I:\\10-Sales\\Delphi\\Audit_Info\\Audits\\MPE\\Python Code\\Others\\BookingOtherIncome.jpg", 0x5, 0)
+    imageCid = "BookingOtherIncome.jpg@123"
+    attachment.PropertyAccessor.SetProperty("http://schemas.microsoft.com/mapi/proptag/0x3712001E", imageCid)
     # Add Signature to Email first
     mail.GetInspector
-    # Message Body
+    
+    # Message Body + Image Add
     MessageBody = "<p>Dear All</p><p>Attached is the <strong><em>Booking Other Income Report</em></strong> listing all bookings with a marked up room rate (i.e.: includes ferry ticket or Eiffel tower ticket) - for booking arrival within two months. Please don&rsquo;t forget to take action on the listed bookings.</p><p>Once assistants / coordinators send the approved form to the relevant department for issuing the tickets / vouchers, please input comment in the &ldquo;Description&rdquo; field under Booking Other income in Delphi.fdc. This must be done on the same date so that it can reflect in the &ldquo;Description&rdquo; column of the report that the task of the booking has been actioned.</p> \
-                  <p>Guideline for inputting comment in Delphi.fdc:</p><p>Go to Booking Other income -&gt; Select &ldquo;Ferry &ndash; Cotai Class &ndash; Adult&rdquo; -&gt; Click &ldquo;Edit&rdquo; -&gt; Input comment in the field of Description</p>"
+                  <p>Guideline for inputting comment in Delphi.fdc:</p><p>Go to Booking Other income -&gt; Select &ldquo;Ferry &ndash; Cotai Class &ndash; Adult&rdquo; -&gt; Click &ldquo;Edit&rdquo; -&gt; Input comment in the field of Description</p> " + "<img src=\"cid:{0}\">".format(imageCid)
+
     # Find and replace to add Message Body to HTML text
     index = mail.HTMLbody.find('>', mail.HTMLbody.find('<body')) 
     mail.HTMLbody = mail.HTMLbody[:index + 1] + MessageBody + mail.HTMLbody[index + 1:]
-    mail.SaveAs(Path='I:\\10-Sales\\Personal Folder\\Admin & Assistant Team\\Patrick Leong\\Python Code\\Audit Report\\Email.msg')
-    #mail.send
+    #mail.SaveAs(Path='I:\\10-Sales\\Personal Folder\\Admin & Assistant Team\\Patrick Leong\\Python Code\\Audit Report\\Email.msg')
+    mail.send
     
 # Send email to booking owner if EmailList is larger than 0
 EmailList = list(set(EmailList))
