@@ -3,8 +3,9 @@
 # P and T status and send email to booking owner
 
 from simple_salesforce import Salesforce
-import requests, password, datetime
-import stripJunkSimpleSalesforce as stripForce
+import requests, datetime
+from Others.stripJunkSimpleSalesforce import stripJunkSimpleSalesforce
+from Others import password
 import pandas as pd
 import win32com.client as win32
 outlook = win32.Dispatch("Outlook.Application")
@@ -28,30 +29,32 @@ session = requests.Session()
 
 # Date Range is from now til 60 days later
 now = datetime.datetime.now()
-StartDate = now - datetime.timedelta(days=1000)
+StartDate = now + datetime.timedelta(days=60)
 Current_Date = str(now.year) + '-' + str('%02d'% now.month) + '-' + str('%02d'% now.day)
 Start_Date = str(StartDate.year) + '-' + str('%02d'% StartDate.month) + '-' + str('%02d'% StartDate.day)
 File_Date = str(now.year) + str('%02d'% now.month) + str('%02d'% now.day)
 
 # Run SOQL to get data
 BKdata1 = sf.query("SELECT nihrm__Booking__r.Owner.Name, nihrm__Booking__r.Owner.Email, nihrm__Booking__r.nihrm__Account__r.Name,	nihrm__Booking__r.nihrm__Agency__r.Name, nihrm__Booking__r.Name, nihrm__Booking__r.nihrm__BookingStatus__c, nihrm__Booking__r.nihrm__ArrivalDate__c, \
-                           nihrm__Booking__r.nihrm__DepartureDate__c, Name, nihrm__OtherIncome__c, nihrm__Description__c \
+                           nihrm__Booking__r.nihrm__DepartureDate__c, Name, nihrm__BookedRevenueTotal__c, nihrm__Description__c \
                     FROM nihrm__BookingOtherIncome__c \
-                    WHERE (nihrm__Booking__r.nihrm__ArrivalDate__c <= TODAY AND nihrm__Booking__r.nihrm__ArrivalDate__c >= " + str(Start_Date) + ")")
-                    #WHERE (nihrm__Booking__r.nihrm__ArrivalDate__c <= TODAY AND nihrm__Booking__r.nihrm__ArrivalDate__c >= " + str(Start_Date) + ") AND (nihrm__Booking__r.nihrm__BookingStatus__c IN ('Prospect', 'Tentative'))")
+                    WHERE (nihrm__Booking__r.nihrm__ArrivalDate__c <= TODAY AND nihrm__Booking__r.nihrm__ArrivalDate__c >= " + str(Start_Date) + ") AND (nihrm__Booking__r.nihrm__BookingStatus__c IN ('Prospect', 'Tentative'))")
+                    #WHERE (nihrm__Booking__r.nihrm__ArrivalDate__c <= TODAY AND nihrm__Booking__r.nihrm__ArrivalDate__c >= " + str(Start_Date) + ")")
 # Convert the data to a readable format
-BKdata2 = stripForce.stripJunkSimpleSalesforce(BKdata1)
+BKdata2 = stripJunkSimpleSalesforce(BKdata1)
 # Sorting the order for the columns
 index = ['nihrm__Booking__r.Owner.Name', 'nihrm__Booking__r.nihrm__Account__r.Name', 'nihrm__Booking__r.nihrm__Agency__r.Name', 'nihrm__Booking__r.Name', 'nihrm__Booking__r.nihrm__BookingStatus__c', 'nihrm__Booking__r.nihrm__ArrivalDate__c', 'nihrm__Booking__r.nihrm__DepartureDate__c',
-         'Name', 'nihrm__OtherIncome__c', 'nihrm__Description__c', 'nihrm__Booking__r.Owner.Email']
+         'Name', 'nihrm__BookedRevenueTotal__c', 'nihrm__Description__c', 'nihrm__Booking__r.Owner.Email']
 BKdata3 = pd.DataFrame((pd.DataFrame.from_dict(BKdata2)), columns = index)
+# Format the display for Revenue column
+BKdata3['nihrm__BookedRevenueTotal__c'] = BKdata3['nihrm__BookedRevenueTotal__c'].map('${:,.2f}'.format)
 # Add Owner Email to EmailList and then take out from the column
-EmailList = BKdata3['nihrm__Booking__r.Owner.Email'].tolist()
+EmailList = list(set(BKdata3['nihrm__Booking__r.Owner.Email'].tolist()))
 del BKdata3['nihrm__Booking__r.Owner.Email']
 # Change column header
 BKdata3.columns = ['Booking Owner', 'Account', 'Agency', 'Post As', 'Status', 'Arrival', 'Departure', 'Revenue Name', 'Ancillary Revenue', 'Description']
 # Transfer data into excel file
-ExcelPath = FilePath + File_Date + ' Booking Other income Report' + '.xlsx'
+ExcelPath = FilePath + File_Date + ' Booking Other income Report1' + '.xlsx'
 writer = pd.ExcelWriter(ExcelPath, engine='xlsxwriter')
 BKdata3.to_excel(writer, index=False, sheet_name='Report')
 
