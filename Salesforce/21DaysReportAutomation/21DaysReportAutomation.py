@@ -79,21 +79,20 @@ for s, n in zip(Status, TabName):
     RBdata3 = pd.DataFrame(pd.DataFrame.from_dict(RBdata2), columns = index)
     RBdata3.columns = ['Property', 'Post As', 'Room Block Name', 'Booking Owner', 'Booking Type', 'Status', 'Start Date', 'Roomnights']
     
-    """
     # Sumif function for Roomnights in Room Block tab into Booking tab
     x = 0
-    for i, j in BKdata3.iterrows():
-        RN = RBdata3.groupby(['Post As'])['Roomnights'].sum()
-        if RN.index[x] == j['Post As']:
-            #print(RN.values[x])
-            BKdata3.at[i, 'Roomnights'] = RN.values[x]
+    RN = RBdata3.groupby(['Post As'])['Roomnights'].sum()
+    while RN.count()-1 >= x:
+        for i, j in BKdata3.iterrows():    
+            if RN.index[x] == j['Post As']:
+                BKdata3.at[i, 'Roomnights'] = RN.values[x]
         x += 1
-    """
+    
     # Transfer the data to excel file
     writer = pd.ExcelWriter(path + FileDate + '_21 days report ' + str(s) + '.xlsx', engine='xlsxwriter')
     BKdata3.to_excel(writer, index=False, sheet_name=n)
     # Adjust Column width
-    AdjustColumnWidth(n, BKdata3)
+    AdjustColumnWidth(n, BKdata3)          
     
     # Transfer the data to excel file
     RBdata3.to_excel(writer, index=False, sheet_name="RN Block by Property")
