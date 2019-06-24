@@ -54,7 +54,7 @@ del BKdata3['nihrm__Booking__r.Owner.Email']
 # Change column header
 BKdata3.columns = ['Booking Owner', 'Account', 'Agency', 'Post As', 'Status', 'Arrival', 'Departure', 'Revenue Name', 'Ancillary Revenue', 'Description']
 # Transfer data into excel file
-ExcelPath = FilePath + File_Date + ' Booking Other income Report1' + '.xlsx'
+ExcelPath = FilePath + File_Date + ' Booking Other income Report' + '.xlsx'
 writer = pd.ExcelWriter(ExcelPath, engine='xlsxwriter')
 BKdata3.to_excel(writer, index=False, sheet_name='Report')
 
