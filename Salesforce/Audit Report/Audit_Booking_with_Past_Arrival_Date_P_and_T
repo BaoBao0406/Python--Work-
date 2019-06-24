@@ -3,8 +3,9 @@
 # T status and send email to booking owner
 
 from simple_salesforce import Salesforce
-import requests, password, datetime
-import stripJunkSimpleSalesforce as stripForce
+import requests, datetime
+from Others.stripJunkSimpleSalesforce import stripJunkSimpleSalesforce
+from Others import password
 import pandas as pd
 import win32com.client as win32
 outlook = win32.Dispatch("Outlook.Application")
@@ -38,7 +39,7 @@ BKdata1 = sf.query("SELECT Owner.Name, Owner.Email, nihrm__Account__r.Name, nihr
                   FROM nihrm__Booking__c \
                   WHERE (nihrm__ArrivalDate__c <= TODAY AND nihrm__ArrivalDate__c >= " + str(Start_Date) + ") AND (nihrm__BookingStatus__c IN ('Prospect', 'Tentative'))")
 # Convert the data to a readable format
-BKdata2 = stripForce.stripJunkSimpleSalesforce(BKdata1)
+BKdata2 = stripJunkSimpleSalesforce(BKdata1)
 # Sorting the order for the columns
 index = ['nihrm__Property__c', 'Owner.Name', 'nihrm__Account__r.Name', 'Name', 'nihrm__AgreedRoomnightsTotal__c', 'nihrm__AgreedGuestroomRevenueTotal__c', 'nihrm__ArrivalDate__c', 'nihrm__BookingStatus__c', 'Owner.Email']
 BKdata3 = pd.DataFrame((pd.DataFrame.from_dict(BKdata2)), columns = index)
@@ -66,7 +67,7 @@ def SendEmail():
     mail = outlook.CreateItem(0)
     mail.To = ';'.join(EmailList)
     mail.CC = ';'.join(password.CCList)
-    mail.Subject = 'Audit: Events (T and P) with Past Arrival Date'
+    mail.Subject = 'Audit: Bookings (T and P) with Past Arrival Date'
     mail.Attachments.Add(ExcelPath)
     # Set email to High Importance
     mail.Importance = 2
@@ -79,11 +80,10 @@ def SendEmail():
     # Find and replace to add Message Body to HTML text
     index = mail.HTMLbody.find('>', mail.HTMLbody.find('<body')) 
     mail.HTMLbody = mail.HTMLbody[:index + 1] + MessageBody + mail.HTMLbody[index + 1:]
-    mail.SaveAs(Path='I:\\10-Sales\\Personal Folder\\Admin & Assistant Team\\Patrick Leong\\Python Code\\Audit Report\\Email.msg')
-    #mail.send
+    #mail.SaveAs(Path='I:\\10-Sales\\Personal Folder\\Admin & Assistant Team\\Patrick Leong\\Python Code\\Audit Report\\Email.msg')
+    mail.send
     
 # Send email to booking owner if EmailList is larger than 0
 EmailList = list(set(EmailList))
 if len(EmailList) > 0:
-    print(len(EmailList))
     SendEmail()
