@@ -1,0 +1,1 @@
+# initial package for password.py and stripJunkSimpleSalesforce.py
