@@ -92,6 +92,5 @@ def SendEmail():
     mail.send
     
 # Send email to booking owner if EmailList is larger than 0
-EmailList = list(set(EmailList))
 if len(EmailList) > 0:
     SendEmail()
