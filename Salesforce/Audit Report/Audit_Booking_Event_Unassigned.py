@@ -30,29 +30,29 @@ session = requests.Session()
 # Report Run date
 now = datetime.datetime.now()
 File_Date = str(now.year) + str('%02d'% now.month) + str('%02d'% now.day)
-"""
+
 # Run SOQL to get data
-BKdata1 = sf.query("SELECT Owner.Name, Owner.Email, nihrm__Property__c, nihrm__Booking__r.Name, nihrm__Booking__r.nihrm__BookingStatus__c, nihrm__FunctionRoom__r.Name, Name, nihrm__StartDate__c, \
-                           nihrm__EndDate__c, nihrm__EventStatus__c, nihrm__Booking__r.nihrm__ArrivalDate__c, CreatedBy.Name \
+BKdata1 = sf.query("SELECT Owner.Name, Owner.Email, nihrm__Property__c, nihrm__Booking__r.nihrm__Account__r.Name, nihrm__Booking__r.Name, nihrm__StartDate__c,  Name, nihrm__FunctionRoom__r.Name, \
+                           nihrm__EventStatus__c, CreatedBy.Name \
                     FROM nihrm__BookingEvent__c \
-                    WHERE (nihrm__FunctionRoom__r.Name IN ('Unassigned')) AND (nihrm__EventStatus__c IN ('Definite', 'Tentative'))")
+                    WHERE (nihrm__FunctionRoom__r.Name IN ('Unassigned')) AND (nihrm__EventStatus__c IN ('Definite', 'Tentative')) AND (NOT nihrm__Booking__r.Name like '%Testing%')")
                     
 # Convert the data to a readable format
 BKdata2 = stripJunkSimpleSalesforce(BKdata1)
 # Sorting the order for the columns
-index = ['Owner.Name', 'nihrm__Property__c', 'nihrm__Booking__r.Name', 'nihrm__Booking__r.nihrm__BookingStatus__c', 'nihrm__FunctionRoom__r.Name', 'Name', 'nihrm__StartDate__c',
-         'nihrm__EndDate__c', 'nihrm__EventStatus__c', 'nihrm__Booking__r.nihrm__ArrivalDate__c', 'CreatedBy.Name', 'Owner.Email']
+index = ['Owner.Name', 'nihrm__Property__c', 'nihrm__Booking__r.nihrm__Account__r.Name', 'nihrm__Booking__r.Name', 'nihrm__StartDate__c', 'Name', 'nihrm__FunctionRoom__r.Name',
+         'nihrm__EventStatus__c', 'CreatedBy.Name', 'Owner.Email']
 BKdata3 = pd.DataFrame((pd.DataFrame.from_dict(BKdata2)), columns = index)
 # Add Owner Email to EmailList and then take out from the column
 EmailList = list(set(BKdata3['Owner.Email'].tolist()))
 del BKdata3['Owner.Email']
 # Change column header
-BKdata3.columns = ['Event Owner', 'Property', 'Post As', 'Booking Status', 'Function Room', 'Event Name', 'Start Date', 'End Date', 'Event Status', 'Booking Arrival', 'CreatedBy']
+BKdata3.columns = ['Event Owner', 'Property', 'Account', 'Post As', 'Start Date', 'Event Name', 'Function Room', 'Event Status', 'CreatedBy']
 # Transfer data into excel file
 ExcelPath = FilePath + File_Date + '_audit_booking_event_unassigned' + '.xlsx'
 writer = pd.ExcelWriter(ExcelPath, engine='xlsxwriter')
 BKdata3.to_excel(writer, index=False, sheet_name='Report')
-"""
+
 # Adjust the column width (Copied from Stackoverflow: TrigonaMinima)
 worksheet = writer.sheets['Report']
 for i, col in enumerate(BKdata3.columns):
@@ -68,6 +68,8 @@ def SendEmail():
     mail.CC = ';'.join(password.CCList)
     mail.Subject = 'Audit : Booking Event Unassigned'
     mail.Attachments.Add(ExcelPath)
+    # Set email to High Importance
+    mail.Importance = 2
     # Add Signature to Email first
     mail.GetInspector
     
@@ -76,7 +78,7 @@ def SendEmail():
     # Find and replace to add Message Body to HTML text
     index = mail.HTMLbody.find('>', mail.HTMLbody.find('<body')) 
     mail.HTMLbody = mail.HTMLbody[:index + 1] + MessageBody + mail.HTMLbody[index + 1:]
-    mail.SaveAs(Path='I:\\10-Sales\\Personal Folder\\Admin & Assistant Team\\Patrick Leong\\Python Code\\Audit Report\\Email.msg')
+    mail.SaveAs(Path='I:\\10-Sales\\Delphi\\Audit_Info\\Audits\\MPE\\Python Code\\Email.msg')
     #mail.send
     
 # Send email to booking owner if EmailList is larger than 0
