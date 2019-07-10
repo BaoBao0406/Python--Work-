@@ -10,13 +10,21 @@ outlook = win32.Dispatch("Outlook.Application")
 word.Visible = False
 excel.Visible = False
 
-# Delete all files in DraftEmail folder
-path1 = os.getcwd() + '\\DraftEmail\\'
+# Find the folder path under RunFile
+path1 = os.getcwd() + '\\RunFile\\'
 for file in os.listdir(path1):
-    shutil.rmtree(path1 + file)
+    Filename = file
+path1 = path1 + Filename + '\\'
+
+# If DraftEmail folder exisis, deelete it
+if os.path.exists(path1 + 'DraftEmail'):
+    shutil.rmtree(path1 + 'DraftEmail')
+# Create a new DraftEmail folder
+os.mkdir(path1 + 'DraftEmail')
 
 # Open the Excel file and worksheet
-EmailList = os.getcwd() + '\EmailList.xlsx'
+# TODO: Change excel filename and tab name
+EmailList = path1 + '\\EmailList.xlsx'
 wb1 = excel.Workbooks.Open(EmailList)
 ws1 = wb1.Worksheets('EmailList')
 
@@ -44,6 +52,8 @@ while True:
 
 # Email draft need to create if Batch name match
 BatchToRun = ws1.Cells(1, 2).Value
+# Word file template used to create email draft
+WordFilename = ws1.Cells(2, 2).Value
 # Dictionary with path for email and number of email drafted
 AssistantList = {}
 # x is to find the End of the row number
@@ -57,25 +67,25 @@ while True:
         Name = ws1.Cells(x, 2).Value
         # Create Assistant Folder if it does not exist
         if Name not in AssistantList:
-            path = os.getcwd() + '\\DraftEmail\\'
-            os.mkdir(path + Name)
-            AssistantList.setdefault(Name, []).append(str(path + Name))
+            path2 = path1 + '\\DraftEmail\\'
+            os.mkdir(path2 + Name)
+            AssistantList.setdefault(Name, []).append(str(path2 + Name))
             AssistantList[Name].append(1)
         else:
             AssistantList[Name][1] = AssistantList[Name][1] + 1
             
         # Open word template to replace
-        doc = word.Documents.Open(os.getcwd() + '\\EmailTemplate.docx', False, False)
+        doc = word.Documents.Open(path1 + WordFilename, False, False)
         Num = 1
         for field in FieldList:
             word.Selection.Find.Execute(str('[Field' + str(Num) + ']'), False, False, False, False, False, True, 1, True, str(ws1.Cells(x, field).Value), 2)
             Num += 1
         # Amend the file name for Template file
-        doc.SaveAs(os.getcwd() + '\\Template' + Name + '.docx', FileFormat=12)
+        doc.SaveAs(path1 + '\\Template' + Name + '.docx', FileFormat=12)
         doc.Close()
         
         # Convert the Word file into HTML text
-        with open(os.getcwd() + '\\Template' + Name + '.docx', 'rb') as docx_file:
+        with open(path1 + '\\Template' + Name + '.docx', 'rb') as docx_file:
             result = mammoth.convert_to_html(docx_file)
             html = result.value
         
@@ -120,10 +130,10 @@ while True:
         mail.HtmlBody = "<html><body>" + html +  "</body></html>"
         # Add Attachment to the email
         for field in AttachList:
-            mail.Attachments.Add(str(ws1.Cells(x, field).Value))
+            mail.Attachments.Add(path1 + '\\Attachment\\'  + str(ws1.Cells(x, field).Value))
             
         # SaveAs the file in the Assistant folder
         mail.SaveAs(Path=AssistantList[Name][0] + '\\' + ws1.Cells(x,2).Value + str(AssistantList[Name][1]) + '.msg')
         # Delete the word file create for email draft
-        os.unlink(os.getcwd() + '\\Template' + Name + '.docx')
+        os.unlink(path1 + '\\Template' + Name + '.docx')
     x += 1
