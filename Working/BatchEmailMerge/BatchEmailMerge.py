@@ -112,11 +112,14 @@ while True:
         if len(ImageList) > 0:
             for image in ImageList:
                 # Use keyWord to replace the [Image] in HTML text
-                keyWord2 = re.compile(r'(\[Image%s\])' % ImgNum)
+                keyWord2 = re.compile(r'(\[%s\])' % image[1:-1])
                 html = keyWord2.sub("<img src=""cid:MyId%s"">" % ImgNum, html)
-                attachment = mail.Attachments.Add(os.getcwd() + "\\Image\\Image%s.jpg" % ImgNum, 0x5, 0)
+                # Change Image size if needed
+                #html = keyWord2.sub("<a href=""mailto:walter.loo@sands.com.mo""><img src=""cid:MyId%s"" align=""middle"" height=""1700"" width=""1000""></a>" % ImgNum, html)
+                attachment = mail.Attachments.Add(path1 + "\\Image\\" + image[1:-1] + ".jpg", 0x5, 0)
                 attachment.PropertyAccessor.SetProperty("http://schemas.microsoft.com/mapi/proptag/0x3712001F", "MyId%s" % ImgNum)
                 ImgNum += 1
+        """
         # Add Image for Country to html body
         if len(CountryImageList) > 0:
             CountryImgNum = 1
@@ -126,7 +129,7 @@ while True:
                 attachment.PropertyAccessor.SetProperty("http://schemas.microsoft.com/mapi/proptag/0x3712001F", "MyId%s" % ImgNum)
                 CountryImgNum += 1
                 ImgNum += 1
-        
+        """
         mail.HtmlBody = "<html><body>" + html +  "</body></html>"
         # Add Attachment to the email
         for field in AttachList:
@@ -135,5 +138,5 @@ while True:
         # SaveAs the file in the Assistant folder
         mail.SaveAs(Path=AssistantList[Name][0] + '\\' + ws1.Cells(x,2).Value + str(AssistantList[Name][1]) + '.msg')
         # Delete the word file create for email draft
-        os.unlink(path1 + '\\Template' + Name + '.docx')
+        #os.unlink(path1 + '\\Template' + Name + '.docx')
     x += 1
