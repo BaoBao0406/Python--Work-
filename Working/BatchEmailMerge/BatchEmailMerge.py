@@ -10,6 +10,9 @@ outlook = win32.Dispatch("Outlook.Application")
 word.Visible = False
 excel.Visible = False
 
+# Property for our hotel
+Property = ['VMRH', 'PARIS', 'CMCC', 'HICC']
+
 # Find the folder path under RunFile
 path1 = os.getcwd() + '\\RunFile\\'
 for file in os.listdir(path1):
@@ -80,6 +83,31 @@ while True:
         for field in FieldList:
             word.Selection.Find.Execute(str('[Field' + str(Num) + ']'), False, False, False, False, False, True, 1, True, str(ws1.Cells(x, field).Value), 2)
             Num += 1
+        
+        # Sentence for Properties in email body
+        if str(ws1.Cells(x, 3).Value) != 'None':
+            PropertyInclude = str(ws1.Cells(x, 3).Value).split()
+            # Compare the difference 
+            DelProperty = list(set(Property) - set(PropertyInclude))
+            # re function for look up
+            PropertyDel = re.compile(r'\[%s\]' % '|'.join(DelProperty))
+            
+            # ParagraphIndex to save the paragraph row number for delete purpose
+            ParagraphIndex = []
+            for parNo in range(1, doc.Paragraphs.Count):
+                current_text = doc.Paragraphs(parNo).Range.Text
+                # Use re function to search in each paragraph
+                PropertySearch = PropertyDel.search(current_text)
+                if PropertySearch != None:
+                    ParagraphIndex.append(parNo)
+            
+            # Sort by descending (to delete paragraph from bottom first)
+            ParagraphIndex.sort(reverse=True)
+            # Delete Paragrapth by index number according to ParagraphIndex list
+            for no in ParagraphIndex:
+                doc.Paragraphs(no).Range.Delete()
+            # TODO: Remove the remaining property name in Word
+            
         # Amend the file name for Template file
         doc.SaveAs(path1 + '\\Template' + Name + '.docx', FileFormat=12)
         doc.Close()
@@ -95,10 +123,6 @@ while True:
         # Search for keyWord [ImageRegion1] in html to creat Image List
         keyWordCountry = re.compile(r'(\[ImageRegion\d\])')
         CountryImageList = keyWordCountry.findall(html)
-        
-        # TODO: Sentence for Properties in email body
-        #if str(ws1.Cells(x, 3).Value) != 'None':
-            
         
         # Create draft email in outlook
         mail = outlook.CreateItem(0)
