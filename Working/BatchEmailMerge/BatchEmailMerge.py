@@ -109,11 +109,11 @@ while True:
             # TODO: Remove the remaining property name in Word
             
         # Amend the file name for Template file
-        doc.SaveAs(path1 + '\\Template' + Name + '.docx', FileFormat=12)
+        doc.SaveAs(path1 + '\\Template.docx', FileFormat=12)
         doc.Close()
         
         # Convert the Word file into HTML text
-        with open(path1 + '\\Template' + Name + '.docx', 'rb') as docx_file:
+        with open(path1 + '\\Template.docx', 'rb') as docx_file:
             result = mammoth.convert_to_html(docx_file)
             html = result.value
         
@@ -161,6 +161,8 @@ while True:
             
         # SaveAs the file in the Assistant folder
         mail.SaveAs(Path=AssistantList[Name][0] + '\\' + ws1.Cells(x,2).Value + str(AssistantList[Name][1]) + '.msg')
-        # Delete the word file create for email draft
-        #os.unlink(path1 + '\\Template' + Name + '.docx')
+        
     x += 1
+
+# Delete word file created after running the script
+os.unlink(path1 + '\\Template.docx')
