@@ -113,10 +113,11 @@ while True:
         doc.Close()
         
         # Convert the Word file into HTML text
+        style_map = "u => u"
         with open(path1 + '\\Template.docx', 'rb') as docx_file:
-            result = mammoth.convert_to_html(docx_file)
+            result = mammoth.convert_to_html(docx_file, style_map=style_map)
             html = result.value
-        
+
         # Search for keyWord [Image1] in html to creat Image List
         keyWord1 = re.compile(r'(\[Image\d\])')
         ImageList = keyWord1.findall(html)
@@ -127,8 +128,10 @@ while True:
         # Create draft email in outlook
         mail = outlook.CreateItem(0)
         mail.To = str(ws1.Cells(x, 6).Value)
-        mail.CC = str(ws1.Cells(x, 7).Value)
-        mail.BCC = str(ws1.Cells(x, 8).Value)
+        if str(ws1.Cells(x, 7).Value) != 'None':
+            mail.CC = str(ws1.Cells(x, 7).Value)
+        if str(ws1.Cells(x, 8).Value) != 'None':
+            mail.BCC = str(ws1.Cells(x, 8).Value)
         mail.Subject = str(ws1.Cells(x, 5).Value)
         
         # Add Image to html body
@@ -137,9 +140,9 @@ while True:
             for image in ImageList:
                 # Use keyWord to replace the [Image] in HTML text
                 keyWord2 = re.compile(r'(\[%s\])' % image[1:-1])
-                html = keyWord2.sub("<img src=""cid:MyId%s"">" % ImgNum, html)
+                #html = keyWord2.sub("<img src=""cid:MyId%s"">" % ImgNum, html)
                 # Change Image size if needed
-                #html = keyWord2.sub("<a href=""mailto:walter.loo@sands.com.mo""><img src=""cid:MyId%s"" align=""middle"" height=""1700"" width=""1000""></a>" % ImgNum, html)
+                html = keyWord2.sub("<a href=""mailto:ada.cheang@sands.com.mo""><img src=""cid:MyId%s"" align=""middle"" height=""1700"" width=""1000""></a>" % ImgNum, html)
                 attachment = mail.Attachments.Add(path1 + "\\Image\\" + image[1:-1] + ".jpg", 0x5, 0)
                 attachment.PropertyAccessor.SetProperty("http://schemas.microsoft.com/mapi/proptag/0x3712001F", "MyId%s" % ImgNum)
                 ImgNum += 1
@@ -156,8 +159,9 @@ while True:
         """
         mail.HtmlBody = "<html><body>" + html +  "</body></html>"
         # Add Attachment to the email
-        for field in AttachList:
-            mail.Attachments.Add(path1 + '\\Attachment\\'  + str(ws1.Cells(x, field).Value))
+        if len(AttachList) > 0:
+            for field in AttachList:
+                mail.Attachments.Add(path1 + '\\Attachment\\'  + str(ws1.Cells(x, field).Value))
             
         # SaveAs the file in the Assistant folder
         mail.SaveAs(Path=AssistantList[Name][0] + '\\' + ws1.Cells(x,2).Value + str(AssistantList[Name][1]) + '.msg')
