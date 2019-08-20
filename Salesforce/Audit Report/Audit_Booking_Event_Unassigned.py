@@ -74,7 +74,7 @@ def SendEmail():
     mail.GetInspector
     
     # Message Body + Image Add
-    MessageBody = "<p>Dear All</p><p>&nbsp;</p><p>Please find the attachment of your booking(s)/event(s) and don&rsquo;t forget to update the function room space that is/are still under <strong>Unassigned</strong>.</p>"
+    MessageBody = "<p>Dear All</p><p>Please find the attachment of your booking(s)/event(s) and don&rsquo;t forget to update the function room space that is/are still under <strong>Unassigned</strong>.</p>"
     # Find and replace to add Message Body to HTML text
     index = mail.HTMLbody.find('>', mail.HTMLbody.find('<body')) 
     mail.HTMLbody = mail.HTMLbody[:index + 1] + MessageBody + mail.HTMLbody[index + 1:]
