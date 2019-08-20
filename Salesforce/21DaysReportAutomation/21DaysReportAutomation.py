@@ -104,7 +104,7 @@ for s, n in zip(Status, TabName):
 # Function to Create Prospect Email to send to DOS and SM
 def EmailPROS(ToList, CCList, SMList):
     mail.To = ';'.join(ToList)
-    mail.CC = ';'.join(CCList) + ';'.join(SMList)
+    mail.CC = ';'.join(CCList) + ';' + ';'.join(SMList)
     mail.Subject = '21 days report Prospect'
     mail.Attachments.Add(path + FileDate + '_21 days report Prospect.xlsx')
     # Add Signature to Email first
@@ -125,7 +125,7 @@ def EmailPROS(ToList, CCList, SMList):
 # Function to Create Tentative Email to send to DOS and SM
 def EmailTENT(ToList, CCList, SMList):
     mail.To = ';'.join(ToList)
-    mail.CC = ';'.join(CCList) + ';'.join(SMList)
+    mail.CC = ';'.join(CCList) + ';' + ';'.join(SMList)
     mail.Subject = '21 days report Tentative'
     mail.Attachments.Add(path + FileDate + '_21 days report Tentative.xlsx')
     # Add Signature to Email first
