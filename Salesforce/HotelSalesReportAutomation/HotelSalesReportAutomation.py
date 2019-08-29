@@ -37,18 +37,17 @@ BKdata1 = sf.query("SELECT nihrm__Property__c, End_User_Region__c, nihrm__Bookin
 
 # Convert the data to a readable format
 BKdata2 = stripForce.stripJunkSimpleSalesforce(BKdata1)
-
-index = ['nihrm__Property__c', 'End_User_Region__c', 'nihrm__BookingTypeName__c', 'VCL_Booking_Team_N__c', 'Owner.Name', 'RSO_Manager__r.Name', 'nihrm__Account__r.Name', 'Name', 'nihrm__BookedDate__c', 'nihrm__ArrivalDate__c', 'nihrm__DepartureDate__c',
-         'nihrm__CurrentBlendedRoomnightsTotal__c', 'nihrm__BlendedGuestroomRevenueTotal__c', 'nihrm__CurrentBlendedADR__c', 'VCL_Blended_F_B_Revenue__c', 'nihrm__CurrentBlendedEventRevenue7__c', 'nihrm__CurrentBlendedEventRevenue3__c', 'nihrm__LastStatusDate__c', 'nihrm__BookingStatus__c', 'nihrm__StatusReasonName__c']
-BKdata3 = pd.DataFrame(pd.DataFrame.from_dict(BKdata2), columns = index)
+BKdata3 = pd.DataFrame.from_dict(BKdata2)
 
 # Date columns in List for process
 DateFormat = ['nihrm__BookedDate__c', 'nihrm__ArrivalDate__c', 'nihrm__DepartureDate__c', 'nihrm__LastStatusDate__c']
-
 # Convert column format to datetime
 for date in DateFormat:
     BKdata3[str(date)] = pd.to_datetime(BKdata3[str(date)])
 
+# Create columns to fit Excel report
+# Add 'BookedDate' column - same date as CreatedDate
+BKdata3['BookedDate'] = BKdata3['nihrm__BookedDate__c']
 # Add 'Group' column - Show SM for Sales Manager or RSM for RSO
 BKdata3['Group'] = BKdata3['RSO_Manager__r.Name'].apply(lambda x: 'SM' if pd.isnull(x) else 'RSM')
 # Add 'Period' column - Display the Year and month
@@ -65,8 +64,23 @@ BKdata3['Lead_Status'] = BKdata3['Count_Status']
 # Add 'Lead_all' column - 
 BKdata3['Lead_all'] = BKdata3['nihrm__BookingStatus__c'].apply(lambda x: 0 if x == '' else 1)
 
-#BKdata3['nihrm__BookedDate__c'] = pd.to_datetime(BKdata3['nihrm__BookedDate__c']).dt.strftime('%d/%m/%Y')
+# Sort Column Order
+index = ['nihrm__Property__c', 'End_User_Region__c', 'nihrm__BookingTypeName__c', 'Group', 'VCL_Booking_Team_N__c', 'Owner.Name', 'RSO_Manager__r.Name', 'nihrm__Account__r.Name', 'Name', 'nihrm__BookedDate__c', 'nihrm__ArrivalDate__c', 'BookedDate', 'nihrm__DepartureDate__c', 'nihrm__CurrentBlendedRoomnightsTotal__c', 'nihrm__BlendedGuestroomRevenueTotal__c', 
+         'nihrm__CurrentBlendedADR__c', 'VCL_Blended_F_B_Revenue__c', 'nihrm__CurrentBlendedEventRevenue7__c', 'nihrm__CurrentBlendedEventRevenue3__c', 'nihrm__LastStatusDate__c', 'nihrm__BookingStatus__c', 'nihrm__StatusReasonName__c', 'Period', 'Total', 'Lead Time', 'Count_Status', 'Lead_Status', 'Lead_all']
+BKdata3 = pd.DataFrame(BKdata3, columns = index)
+# Drop 'nihrm__StatusReasonName__c' column
+BKdata3.drop('nihrm__StatusReasonName__c', axis=1, inplace=True)
 
-# Columne final order
-#BKdata3.columns = ['Property', 'End User Region', 'BkgType', 'Group', 'BkdByID', 'BookedBy', 'RSO', 'Account Name', 'PostAs', 'CreateDate', 'ArrivalDate', 'BookedDate', 'DepartureDate', 'Room Night', ' Room Night Rev', 'AverageRate',
-#                   'F&B Revenue', 'Venue', 'Others', 'StatusChangeDate', 'Status', 'Period', 'Total', 'Lead Time', 'Count_Status', 'Lead_Status', 'Lead_all']
+# Re-arrange columns order
+BKdata3.columns = ['Property', 'End User Region', 'BkgType', 'Group', 'BkdByID', 'BookedBy', 'RSO', 'Account Name', 'PostAs', 'CreateDate', 'ArrivalDate', 'BookedDate', 'DepartureDate', 'Room Night', ' Room Night Rev', 'AverageRate',
+                   'F&B Revenue', 'Venue', 'Others', 'StatusChangeDate', 'Status', 'Period', 'Total', 'Lead Time', 'Count_Status', 'Lead_Status', 'Lead_all']
+
+# TODO: take out Sheraton RN and Revenue from the data
+
+# Convert date column format to suit excel format
+for date in DateFormat:
+    BKdata3[str(date)] = BKdata3[str(date)].dt.strftime('%d/%m/%Y')
+    
+print(BKdata3.head())
+
+# TODO: Calculate top 3 Region for 'No of Definite', 'Definite RNs', 'Total Leads', 'Total Deman'
