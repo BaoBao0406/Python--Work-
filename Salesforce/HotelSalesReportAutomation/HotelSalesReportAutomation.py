@@ -66,6 +66,8 @@ BKdata3['Count_Status'] = BKdata3['nihrm__BookingStatus__c'].apply(lambda x: 1 i
 BKdata3['Lead_Status'] = BKdata3['Count_Status']
 # Add 'Lead_all' column - 
 BKdata3['Lead_all'] = BKdata3['nihrm__BookingStatus__c'].apply(lambda x: 0 if x == '' else 1)
+# Replace NaT value with "None"
+BKdata3['StatusChangeDate'] = BKdata3['StatusChangeDate'].apply(lambda x: None if x=="NaT" else x)
 
 # Sort Column Order
 index = ['nihrm__Property__c', 'End_User_Region__c', 'nihrm__BookingTypeName__c', 'Group', 'VCL_Booking_Team_N__c', 'Owner.Name', 'RSO_Manager__r.Name', 'nihrm__Account__r.Name', 'Name', 'CreateDate', 'ArrivalDate', 'BookedDate', 'DepartureDate', 'nihrm__CurrentBlendedRoomnightsTotal__c', 'nihrm__BlendedGuestroomRevenueTotal__c', 
@@ -83,7 +85,20 @@ BKdata3.columns = ['Property', 'End User Region', 'BkgType', 'Group', 'BkdByID',
 # Convert date column format to suit excel format
 for date in DateFormat:
     BKdata3[str(date)] = BKdata3[str(date)].dt.strftime('%d/%m/%Y')
-    
-print(BKdata3[['CreateDate', 'ArrivalDate', 'DepartureDate', 'StatusChangeDate', 'Status']].head(10))
 
-# TODO: Calculate top 3 Region for 'No of Definite', 'Definite RNs', 'Total Leads', 'Total Deman'
+# Create Pivot Table for 'No of Definite', 'Total Leads', 'Total Demand'
+Region1Top3 = pd.pivot_table(BKdata3, index='End User Region', values = ['Count_Status', 'Room Night', 'Lead_all'], aggfunc = 'sum')
+# Calculate top 3 Region for 'No of Definite'
+No_of_Def = Region1Top3.sort_values(by='Count_Status', ascending=False).head(3)
+print(No_of_Def)
+# Calculate top 3 Region for 'Total Leads'
+Total_Leads = Region1Top3.sort_values(by='Lead_all', ascending=False).head(3)
+print(Total_Leads)
+# Calculate top 3 Region for 'Total Demand'
+Total_Demand = Region1Top3.sort_values(by='Room Night', ascending=False).head(3)
+print(Total_Demand)
+
+# Create Pivot Table for 'Definite RNs'
+Region2Top3 = pd.pivot_table(BKdata3.loc[BKdata3['Count_Status']>0], index='End User Region', values = 'Room Night', aggfunc= 'sum')
+Def_RN = Region2Top3.sort_values(by='Room Night', ascending=False).head(3)
+print(Def_RN)
