@@ -94,15 +94,16 @@ SheratonData1 =  = sf.query("SELECT nihrm__Location__r.Name, nihrm__Booking__r.N
 SheratonData2 = stripForce.stripJunkSimpleSalesforce(SheratonData1)
 SheratonData3 = pd.DataFrame.from_dict(SheratonData2)
 # Rename Sheraton column name
-SheratonData3.columns = ['Property', 'Post As', 'Room Night', ' Room Night Rev', 'CreateDate', 'RoomBlockName','BookingType', 'Status']
+SheratonData3.columns = ['Property', 'Post As', 'Room Night', 'Room Night Rev', 'CreateDate', 'RoomBlockName','BookingType', 'Status']
 
 # Sumif function for Roomnights in Room Block tab into Booking tab
 x = 0
-RN = RBdata3.groupby(['Post As'])['Roomnights'].sum()
-while RN.count()-1 >= x:
+RN = SheratonData3.groupby(['Post As'])[['Room Night', 'Room Night Rev']].sum()
+while len(RN.index)-1 >= x:
     for i, j in BKdata3.iterrows():    
         if RN.index[x] == j['Post As']:
-            BKdata3.at[i, 'Roomnights'] = RN.values[x]
+            BKdata3.at[i, 'Room Night'] = BKdata3.at[i, 'Room Night'] - RN['Room Night'].values[x]
+            BKdata3.at[i, 'Room Night Rev'] = BKdata3.at[i, 'Room Night Rev'] - RN['Room Night Rev'].values[x]
     x += 1
 """
 # All lead Top3 - Create Groupby for Top3 data
