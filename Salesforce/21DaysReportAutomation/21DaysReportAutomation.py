@@ -8,18 +8,44 @@ import stripJunkSimpleSalesforce as stripForce
 import pandas as pd
 import win32com.client as win32
 from time import sleep
+import tkinter as tk
 excel = win32.gencache.EnsureDispatch('Excel.Application')
 outlook = win32.Dispatch("Outlook.Application")
 
 path = 'I:\\10-Sales\\01_Sales_Reports\\21 Days Report\\'
 
+
+# Window for user to input password
+# function to get password
+def get_password():
+    global pw, us
+    us = user_entry.get()
+    pw = pw_entry.get()
+    window.destroy()
+
+# Create Window
+window = tk.Tk()
+window.title('Password')
+window.geometry("250x100+250+150")
+# Create entry space
+label = tk.Label(window, text='Enter password')
+label.pack()
+user_entry = tk.Entry(window, width=20)
+user_entry.pack()
+pw_entry = tk.Entry(window, width=20)
+pw_entry.pack()
+# Create button to excute function to get password from entry space
+button = tk.Button(window, text='Confirm', command=get_password)
+button.pack()
+window.mainloop()
+
 # Salesforce Login info
-Username = password.Username
-Password = password.Password
+Username = us
+Password = pw
 securitytoken = password.securitytoken
 
 # Change proxies and ports
-proxies = {"http": "http://10.96.250.10:80", "https":"https://10.96.250.10:80"}
+proxies = {"https":"https://10.96.250.11:443"}
 
 # Login to Salesforce
 sf = Salesforce(instance='na1.salesforce.com', session_id='', proxies=proxies, username = Username, password= Password, security_token = securitytoken)
@@ -110,10 +136,10 @@ def EmailPROS(ToList, CCList, SMList):
     # Add Signature to Email first
     mail.GetInspector
     # Message Body
-    MessageBody = "<p>Dear All</p><p><br /> Please refer to the attached 21 days PROSPECT business report. This report is run on a daily basis and sent to all DOS to follow up with their sales team.</p> \
-                   <p>Note that there are two tabs <strong>&ldquo;PROS&rdquo; </strong>shows the main property of each group with total Room Nights and <strong>&ldquo;Room Block by Property&rdquo;</strong> in the report.</p> \
-                   <p> Any question or problem, please feel free to contact the Systems Team.</p> <br /><p>Dear Sales Manager,</p><br /> <p>Please refer to the attached 21 days PROSPECT business report.&nbsp;Please follow up on your booking(s) with expired decision due dates</p> \
-                   <p>Note that there are two tabs <strong>&ldquo;PROS&rdquo; </strong>shows the main property of each group with total Room Nights and <strong>&ldquo;Room Block by Property&rdquo;</strong> in the report.</p> <p>&nbsp;</p>"
+    MessageBody = "<p>Dear All</p> <p>Please refer to the attached 21 days PROSPECT business report. This report is run on a daily basis and sent to all DOS to follow up with their sales team.</p> \
+                   <p>For Sales TeamManager - Please follow up on your booking(s) with expired decision due dates.</p><p>Note that there are two tabs <strong><strong>&ldquo;PROS&rdquo; </strong> \
+                   </strong>shows the main property of each group with total Room Nights and <strong><strong>&ldquo;Room Block by Property&rdquo;</strong></strong> in the report.</p> \
+                   <p>Any question or problem, please feel free to contact Systems Team.</p>"
     # Set email to High Importance
     #mail.Importance = 2
     # Find and replace to add Message Body to HTML text
@@ -131,12 +157,10 @@ def EmailTENT(ToList, CCList, SMList):
     # Add Signature to Email first
     mail.GetInspector
     # Message Body
-    MessageBody = "<p>Dear All</p><p> <br /> Please refer to the attached 21 days short term business report. This report is run on a daily basis and sent to all DOS follow up and to other appropriate departments for reference. <br />\
-                   <br /> The DOS is responsible for ensuring the sales managers confirm the groups by the decision due dates listed.<br /> <br /> Any contract received for groups on this list must be routed short term, to all the appropriate departments, by the sales assistant, ASAP. \
-                   <br /> <br /> Any assistant who have problem with short term routing, please feel free to contact the Systems Team.</p> <p>&nbsp;</p> <p>Please note: These are all the Tentative groups that are arriving within the next 21 days.</p> \
-                   <p>There are two tabs &ldquo;<strong>Tentative Booking</strong>&rdquo; shows the main property of each group with total Room Nights and <strong>&ldquo;Room Block by Property&rdquo;</strong> shows total Room Nights by property per each group in the report.</p> <br /> \
-                   <p>Dear Sales Manager,</p><br /> <p>Please refer to the attached 21 days TENTATIVE business report.&nbsp;Please follow up on your booking(s) with expired decision due dates</p> \
-                   <p>Note that there are two tabs <strong>&ldquo;TENT&rdquo; </strong>shows the main property of each group with total Room Nights and <strong>&ldquo;Room Block by Property&rdquo;</strong> in the report.</p> <p>&nbsp;</p>"
+    MessageBody = "<p>Dear All</p> <p>Please refer to the attached Tentative groups that are arriving within the next 21 days. This report is run on a daily basis and sent to all DOS follow up and to other appropriate departments for reference. <br /> \
+                   <br /> Any contract received for groups on this list must be routed short term to all the appropriate departments by the sales assistant ASAP. <br /> <br /> Any assistant who has problem with short term routing, please feel free to contact Systems Team.</p> \
+                   <p>For Sales Manager - Please follow up on your booking(s) with expired decision due dates.</p> <p>Note that there are two tabs <strong><strong>&ldquo;TENT&rdquo;</strong></strong> shows the main property of each group with total Room Nights and \
+                   <strong><strong>&ldquo;Room Block by Property&rdquo; </strong></strong>shows total Room Nights by property per each group in the report.</p> "
         #Filename = 'TEmailFollowUp.msg'
     # Find and replace to add Message Body to HTML text
     index = mail.HTMLbody.find('>', mail.HTMLbody.find('<body')) 
