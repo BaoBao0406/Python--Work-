@@ -17,7 +17,12 @@ End_Date = str(EndDate.year) + '-' + str('%02d'% EndDate.month) + '-' + str('%02
 
 # Convert data to excel format
 def convert_to_excel(data, filename):
-    data.to_excel(save_path + filename + '.xlsx', sheet_name='Sheet1')
+    data.to_excel(save_path + filename + '.xlsx', sheet_name='Sheet1', index=False)
+
+
+# FDC User ID and Name list
+user = pd.read_sql('SELECT DISTINCT(Id), Name \
+                    FROM dbo.[User]', conn)
 
 
 # "01Rawdata_Group Booking by arrival date" - Report
@@ -43,6 +48,23 @@ convert_to_excel(data, filename)
 
 
 # TODO: "02Account and Activities" - Report
+column_name = ['Account ID', 'Account Name', 'Account Type', 'Account Owner', 'Region', 'Industry', 'Activity ID', 'Assigned', 'Type', 'Subject', 'Created Date', 'Start', 'Last Modified Date', 'Status']
+ac_event = pd.read_sql("SELECT ac.Id, ac.Name, ac.Type, ac.OwnerId, ac.nihrm__RegionName__c, ac.Industry, ev.Id, ev.OwnerId, ev.Type, ev.Subject, FORMAT(ev.CreatedDate, 'dd/MM/yyyy') AS CreatedDate, FORMAT(ev.StartDateTime, 'dd/MM/yyyy') AS Start, FORMAT(ev.LastModifiedDate, 'dd/MM/yyyy') AS LastModifiedDate, VCL_Status__c \
+                        FROM dbo.Event AS ev \
+                        INNER JOIN dbo.Account AS ac \
+                            ON ev.WhatId = ac.Id \
+                        WHERE ev.CreatedDate BETWEEN CONVERT(datetime, '2021-01-01') AND CONVERT(datetime, '2045-12-31')", conn)
+ac_event.columns = column_name
+
+ac_task = pd.read_sql("SELECT ac.Id, ac.Name, ac.Type, ac.OwnerId, ac.nihrm__RegionName__c, ac.Industry, tk.Id, tk.OwnerId, tk.Type, tk.Subject, FORMAT(tk.CreatedDate, 'dd/MM/yyyy') AS CreatedDate, FORMAT(tk.ActivityDate, 'dd/MM/yyyy') AS Start, FORMAT(tk.LastModifiedDate, 'dd/MM/yyyy') AS LastModifiedDate, tk.Status \
+                       FROM dbo.Task AS tk \
+                       INNER JOIN dbo.Account AS ac \
+                           ON tk.WhatId = ac.Id \
+                       WHERE tk.CreatedDate BETWEEN CONVERT(datetime, '2021-01-01') AND CONVERT(datetime, '2045-12-31')", conn)
+ac_task.columns = column_name
+
+filename = '02Account and Activities'
+convert_to_excel(data, filename)
 
 
 # "03Agency and Booking ID" - Report
@@ -75,7 +97,6 @@ convert_to_excel(data, filename)
 
 
 # "07roomnight peak data and number" - Report
-# TODO: Add date range WHERE clause
 data = pd.read_sql("SELECT BK.Booking_ID_Number__c, GS.nihrm__Property__c, GS.Name, BK.Name, FORMAT(RoomN.nihrm__PatternDate__c, 'dd/MM/yyyy') AS PatternDate, \
                            RoomN.nihrm__AgreedRoomsTotal__c, RoomN.nihrm__PickupRoomsTotal__c \
                     FROM dbo.nihrm__BookingRoomNight__c AS RoomN \
@@ -84,7 +105,8 @@ data = pd.read_sql("SELECT BK.Booking_ID_Number__c, GS.nihrm__Property__c, GS.Na
                     INNER JOIN dbo.nihrm__BookingRoomBlock__c AS RoomB \
                         ON RoomN.nihrm__Booking__c = RoomB.nihrm__Booking__c \
                     INNER JOIN dbo.nihrm__GuestroomType__c AS GS \
-                        ON RoomN.nihrm__GuestroomType__c = GS.Id", conn)
+                        ON RoomN.nihrm__GuestroomType__c = GS.Id \
+                    WHERE RoomN.nihrm__PatternDate__c BETWEEN CONVERT(datetime, '2018-01-01') AND CONVERT(datetime, '2045-12-31')", conn)
 data.columns = ['Booking: Booking ID#', 'Property', 'Guestroom Type', 'Booking: Booking Post As', 'Pattern Date', 'Agreed Rooms Total', 'Pickup Rooms Total']
 filename = '07roomnight peak data and number'
 convert_to_excel(data, filename)
