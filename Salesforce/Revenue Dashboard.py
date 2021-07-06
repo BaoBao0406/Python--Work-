@@ -23,6 +23,7 @@ def convert_to_excel(data, filename):
 # FDC User ID and Name list
 user = pd.read_sql('SELECT DISTINCT(Id), Name \
                     FROM dbo.[User]', conn)
+user = user.set_index('Id')['Name'].to_dict()
 
 
 # "01Rawdata_Group Booking by arrival date" - Report
@@ -43,11 +44,12 @@ data.columns = ['Booking: Owner Name', 'Property', 'Account', 'Company City', 'C
                 'At Definite Blended Outlet Revenue', 'Blended Outlet Revenue', 'Blended F&B Revenue', 'At Definite Blended Rental Revenue', 'Blended Rental Revenue', 'At Definite Blended AV Revenue', 'Blended AV Revenue', 'At Definite Blended Resource Revenue',
                 'Blended Resource Revenue', 'At Definite Blended Ancillary Revenue', 'Blended Ancillary Revenue', 'At Definite Blended Other Revenue', 'Blended Other Revenue', 'Sheraton F&B Revenue', 'Sheraton Room Rental Revenue	', 'Status',
                 'Last Status Date', 'Booked', 'End User Region', 'End User SIC', 'Booking Type', 'Lost to Competitor', 'Lost Reason', 'Booking ID#']
+data['Booking: Owner Name'].replace(user, inplace=True)
 filename = '01Rawdata_Group Booking by arrival date'
 convert_to_excel(data, filename)
 
 
-# TODO: "02Account and Activities" - Report
+# "02Account and Activities" - Report
 column_name = ['Account ID', 'Account Name', 'Account Type', 'Account Owner', 'Region', 'Industry', 'Activity ID', 'Assigned', 'Type', 'Subject', 'Created Date', 'Start', 'Last Modified Date', 'Status']
 ac_event = pd.read_sql("SELECT ac.Id, ac.Name, ac.Type, ac.OwnerId, ac.nihrm__RegionName__c, ac.Industry, ev.Id, ev.OwnerId, ev.Type, ev.Subject, FORMAT(ev.CreatedDate, 'dd/MM/yyyy') AS CreatedDate, FORMAT(ev.StartDateTime, 'dd/MM/yyyy') AS Start, FORMAT(ev.LastModifiedDate, 'dd/MM/yyyy') AS LastModifiedDate, VCL_Status__c \
                         FROM dbo.Event AS ev \
@@ -62,9 +64,12 @@ ac_task = pd.read_sql("SELECT ac.Id, ac.Name, ac.Type, ac.OwnerId, ac.nihrm__Reg
                            ON tk.WhatId = ac.Id \
                        WHERE tk.CreatedDate BETWEEN CONVERT(datetime, '2021-01-01') AND CONVERT(datetime, '2045-12-31')", conn)
 ac_task.columns = column_name
-
+# Concate event and task table
+ac_activities = pd.concat([ac_event, ac_event])
+ac_activities['Account Owner'].replace(user, inplace=True)
+ac_activities['Assigned'].replace(user, inplace=True)
 filename = '02Account and Activities'
-convert_to_excel(data, filename)
+convert_to_excel(ac_activities, filename)
 
 
 # "03Agency and Booking ID" - Report
