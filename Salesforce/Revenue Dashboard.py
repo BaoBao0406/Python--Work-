@@ -51,18 +51,20 @@ convert_to_excel(data, filename)
 
 # "02Account and Activities" - Report
 column_name = ['Account ID', 'Account Name', 'Account Type', 'Account Owner', 'Region', 'Industry', 'Activity ID', 'Assigned', 'Type', 'Subject', 'Created Date', 'Start', 'Last Modified Date', 'Status']
-ac_event = pd.read_sql("SELECT ac.Id, ac.Name, ac.Type, ac.OwnerId, ac.nihrm__RegionName__c, ac.Industry, ev.Id, ev.OwnerId, ev.Type, ev.Subject, FORMAT(ev.CreatedDate, 'dd/MM/yyyy') AS CreatedDate, FORMAT(ev.StartDateTime, 'dd/MM/yyyy') AS Start, FORMAT(ev.LastModifiedDate, 'dd/MM/yyyy') AS LastModifiedDate, VCL_Status__c \
+ac_event = pd.read_sql("SELECT ac.Id, ac.Name, ac.Type, ac.OwnerId, ac.nihrm__RegionName__c, ac.Industry, ev.Id, ev.OwnerId, ev.Type, ev.Subject, FORMAT(ev.CreatedDate, 'dd/MM/yyyy') AS CreatedDate, FORMAT(ev.StartDateTime, 'dd/MM/yyyy') AS Start, \
+                               FORMAT(ev.LastModifiedDate, 'dd/MM/yyyy') AS LastModifiedDate, ev.VCL_Status__c \
                         FROM dbo.Event AS ev \
                         INNER JOIN dbo.Account AS ac \
                             ON ev.WhatId = ac.Id \
                         WHERE ev.CreatedDate BETWEEN CONVERT(datetime, '2021-01-01') AND CONVERT(datetime, '2045-12-31')", conn)
 ac_event.columns = column_name
 
-ac_task = pd.read_sql("SELECT ac.Id, ac.Name, ac.Type, ac.OwnerId, ac.nihrm__RegionName__c, ac.Industry, tk.Id, tk.OwnerId, tk.Type, tk.Subject, FORMAT(tk.CreatedDate, 'dd/MM/yyyy') AS CreatedDate, FORMAT(tk.ActivityDate, 'dd/MM/yyyy') AS Start, FORMAT(tk.LastModifiedDate, 'dd/MM/yyyy') AS LastModifiedDate, tk.Status \
-                       FROM dbo.Task AS tk \
-                       INNER JOIN dbo.Account AS ac \
-                           ON tk.WhatId = ac.Id \
-                       WHERE tk.CreatedDate BETWEEN CONVERT(datetime, '2021-01-01') AND CONVERT(datetime, '2045-12-31')", conn)
+ac_task = pd.read_sql("SELECT ac.Id, ac.Name, ac.Type, ac.OwnerId, ac.nihrm__RegionName__c, ac.Industry, tk.Id, tk.OwnerId, tk.Type, tk.Subject, FORMAT(tk.CreatedDate, 'dd/MM/yyyy') AS CreatedDate, FORMAT(tk.ActivityDate, 'dd/MM/yyyy') AS Start, \
+                              FORMAT(tk.LastModifiedDate, 'dd/MM/yyyy') AS LastModifiedDate, tk.Status \
+                      FROM dbo.Task AS tk \
+                      INNER JOIN dbo.Account AS ac \
+                          ON tk.WhatId = ac.Id \
+                      WHERE tk.CreatedDate BETWEEN CONVERT(datetime, '2021-01-01') AND CONVERT(datetime, '2045-12-31')", conn)
 ac_task.columns = column_name
 # Concate event and task table
 ac_activities = pd.concat([ac_event, ac_event])
@@ -88,7 +90,33 @@ filename = '04Account and Booking ID'
 convert_to_excel(data, filename)
 
 
-# TODO: "05Booking and Activities not started" - Report
+# "05Booking and Activities not started" - Report
+column_name = ['Booking ID#', 'Booking: Booking Post As', 'Status', 'Booking: Owner Name', 'End User SIC', 'End User Region', 'Arrival', 'Booked', 'Activity ID', 'Assigned', 'Subject', 'Type', 'Created Date', 'Account', 'Last Modified Date']
+bk_event = pd.read_sql("SELECT BK.Booking_ID_Number__c, BK.Name, BK.nihrm__BookingStatus__c, BK.OwnerId, BK.End_User_SIC__c, BK.End_User_Region__c, FORMAT(BK.nihrm__ArrivalDate__c, 'dd/MM/yyyy') AS ArrivalDate, FORMAT(BK.nihrm__BookedDate__c, 'dd/MM/yyyy') AS BookedDate, ev.Id, ev.OwnerId, ev.Subject, ev.Type, FORMAT(ev.CreatedDate, 'dd/MM/yyyy') AS CreatedDate, ac.Name, FORMAT(ev.LastModifiedDate, 'dd/MM/yyyy') AS LastModifiedDate \
+                        FROM dbo.nihrm__Booking__c AS BK \
+                        INNER JOIN dbo.Event AS ev \
+                            ON BK.Id = ev.WhatId \
+                        INNER JOIN dbo.Account AS ac \
+                            ON BK.nihrm__Account__c = ac.Id \
+                        WHERE (BK.nihrm__ArrivalDate__c BETWEEN CONVERT(datetime, '2016-01-01') AND CONVERT(datetime, '2045-12-31')) \
+                        AND (ev.VCL_Status__c = 'Not Started')", conn)
+bk_event.columns = column_name
+
+bk_task = pd.read_sql("SELECT BK.Booking_ID_Number__c, BK.Name, BK.nihrm__BookingStatus__c, BK.OwnerId, BK.End_User_SIC__c, BK.End_User_Region__c, FORMAT(BK.nihrm__ArrivalDate__c, 'dd/MM/yyyy') AS ArrivalDate, FORMAT(BK.nihrm__BookedDate__c, 'dd/MM/yyyy') AS BookedDate, tk.Id, tk.OwnerId, tk.Subject, tk.Type, FORMAT(tk.CreatedDate, 'dd/MM/yyyy') AS CreatedDate, ac.Name, FORMAT(tk.LastModifiedDate, 'dd/MM/yyyy') AS LastModifiedDate \
+                       FROM dbo.nihrm__Booking__c AS BK \
+                       INNER JOIN dbo.Task AS tk \
+                           ON BK.Id = tk.WhatId \
+                       INNER JOIN dbo.Account AS ac \
+                           ON BK.nihrm__Account__c = ac.Id \
+                       WHERE tk.CreatedDate BETWEEN CONVERT(datetime, '2021-01-01') AND CONVERT(datetime, '2045-12-31') \
+                       AND (tk.Status = 'Not Started')", conn)
+bk_task.columns = column_name
+# Concate event and task table
+bk_activities = pd.concat([bk_event, bk_task])
+bk_activities['Booking: Owner Name'].replace(user, inplace=True)
+bk_activities['Assigned'].replace(user, inplace=True)
+filename = '05Booking and Activities not started'
+convert_to_excel(bk_activities, filename)
 
 
 # "06Event max attendance" - Report
