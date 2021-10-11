@@ -39,7 +39,9 @@ data = pd.read_sql("SELECT BK.OwnerId, BK.nihrm__Property__c, ac.Name, ac.Billin
                     LEFT JOIN dbo.Account AS ac \
                         ON BK.nihrm__Account__c = ac.Id \
                     LEFT JOIN dbo.Account AS ag \
-                        ON BK.nihrm__Agency__c = ag.Id", conn)
+                        ON BK.nihrm__Agency__c = ag.Id \
+                    WHERE (BK.nihrm__BookingTypeName__c NOT IN ('CS Catering - Social', 'ALT Alternative', 'CC Catering - Corporate', 'CN Concert', 'IN Internal')) AND \
+                        (BK.nihrm__Property__c NOT IN ('Sands Macao Hotel')) AND (BK.nihrm__BookingStatus__c IN ('Tentative', 'Definite', 'Prospect', 'Cancelled', 'TurnedDown'))", conn)
 data.columns = ['Booking: Owner Name', 'Property', 'Account', 'Company City', 'Company Country', 'Agency', 'Booking: Booking Post As', 'Arrival', 'Departure', 'Percentage of Attrition', 'Commission %', 'Promotion', 'At Definite Agreed Roomnights',
                 'Blended Roomnights', 'At Definite Agreed Guestroom Revenue', 'Blended Guestroom Revenue Total', 'At Definite Blended Food Revenue', 'Blended Food Revenue', 'At Definite Blended Beverage Revenue', 'Blended Beverage Revenue',
                 'At Definite Blended Outlet Revenue', 'Blended Outlet Revenue', 'Blended F&B Revenue', 'At Definite Blended Rental Revenue', 'Blended Rental Revenue', 'At Definite Blended AV Revenue', 'Blended AV Revenue', 'At Definite Blended Resource Revenue',
@@ -68,7 +70,7 @@ ac_task = pd.read_sql("SELECT ac.Id, ac.Name, ac.Type, ac.OwnerId, ac.nihrm__Reg
                       WHERE tk.CreatedDate BETWEEN CONVERT(datetime, '2021-01-01') AND CONVERT(datetime, '2045-12-31')", conn)
 ac_task.columns = column_name
 # Concate event and task table
-ac_activities = pd.concat([ac_event, ac_event])
+ac_activities = pd.concat([ac_event, ac_task])
 ac_activities['Account Owner'].replace(user, inplace=True)
 ac_activities['Assigned'].replace(user, inplace=True)
 filename = '02Account and Activities'
@@ -85,7 +87,8 @@ convert_to_excel(data, filename)
 
 # "04Account and Booking ID" - Report
 data = pd.read_sql('SELECT nihrm__Agency__c, Booking_ID_Number__c \
-                    FROM dbo.nihrm__Booking__c', conn)
+                    FROM dbo.nihrm__Booking__c \
+                    WHERE nihrm__Agency__c IS NOT NULL', conn)
 data.columns = ['Agency: Account ID', 'Booking ID#']
 filename = '04Account and Booking ID'
 convert_to_excel(data, filename)
@@ -104,7 +107,7 @@ bk_event = pd.read_sql("SELECT BK.Id, BK.Booking_ID_Number__c, BK.Name, BK.nihrm
                         WHERE BK.nihrm__ArrivalDate__c BETWEEN CONVERT(datetime, '2021-01-18') AND CONVERT(datetime, '2045-12-31')", conn)
 bk_event.columns = column_name
 
-bk_task = pd.read_sql("SELECT BK.Id, BK.Booking_ID_Number__c, BK.Name, BK.nihrm__BookingStatus__c, BK.OwnerId, BK.End_User_SIC__c, BK.End_User_Region__c, FORMAT(BK.nihrm__ArrivalDate__c, 'MM/dd/yyyy') AS ArrivalDate, FORMAT(BK.nihrm__BookedDate__c, 'MM/dd/yyyy') AS BookedDate, tk.Id, tk.OwnerId, tk.Subject, tk.Type, FORMAT(tk.CreatedDate, 'MM/dd/yyyy') AS CreatedDate, FORMAT(tk.ActivityDate, 'MM/dd/yyyy') AS Start, FORMAT(tk.LastModifiedDate, 'MM/dd/yyyy') AS LastModifiedDate, tk.VCL_Status__c, ac.Name, ag.Name \
+bk_task = pd.read_sql("SELECT BK.Id, BK.Booking_ID_Number__c, BK.Name, BK.nihrm__BookingStatus__c, BK.OwnerId, BK.End_User_SIC__c, BK.End_User_Region__c, FORMAT(BK.nihrm__ArrivalDate__c, 'MM/dd/yyyy') AS ArrivalDate, FORMAT(BK.nihrm__BookedDate__c, 'MM/dd/yyyy') AS BookedDate, tk.Id, tk.OwnerId, tk.Subject, tk.Type, FORMAT(tk.CreatedDate, 'MM/dd/yyyy') AS CreatedDate, FORMAT(tk.ActivityDate, 'MM/dd/yyyy') AS Start, FORMAT(tk.LastModifiedDate, 'MM/dd/yyyy') AS LastModifiedDate, tk.Status, ac.Name, ag.Name \
                        FROM dbo.nihrm__Booking__c AS BK \
                        INNER JOIN dbo.Task AS tk \
                            ON BK.Id = tk.WhatId \
@@ -126,7 +129,8 @@ convert_to_excel(bk_activities, filename)
 data = pd.read_sql('SELECT dbo.nihrm__Booking__c.Booking_ID_Number__c, nihrm__AgreedAttendance__c \
                     FROM dbo.nihrm__BookingEvent__c \
                     INNER JOIN dbo.nihrm__Booking__c \
-                        ON dbo.nihrm__BookingEvent__c.nihrm__Booking__c = dbo.nihrm__Booking__c.Id', conn)
+                        ON dbo.nihrm__BookingEvent__c.nihrm__Booking__c = dbo.nihrm__Booking__c.Id \
+                    WHERE nihrm__AgreedAttendance__c > 0', conn)
 data.columns = ['Booking: Booking ID#', 'Agreed']
 filename = '06Event max attendance'
 convert_to_excel(data, filename)
@@ -138,8 +142,6 @@ data = pd.read_sql("SELECT BK.Booking_ID_Number__c, GS.nihrm__Property__c, GS.Na
                     FROM dbo.nihrm__BookingRoomNight__c AS RoomN \
                     INNER JOIN dbo.nihrm__Booking__c AS BK \
                         ON RoomN.nihrm__Booking__c = BK.Id \
-                    INNER JOIN dbo.nihrm__BookingRoomBlock__c AS RoomB \
-                        ON RoomN.nihrm__Booking__c = RoomB.nihrm__Booking__c \
                     INNER JOIN dbo.nihrm__GuestroomType__c AS GS \
                         ON RoomN.nihrm__GuestroomType__c = GS.Id \
                     WHERE RoomN.nihrm__PatternDate__c BETWEEN CONVERT(datetime, '2018-01-01') AND CONVERT(datetime, '2045-12-31')", conn)
