@@ -78,18 +78,19 @@ convert_to_excel(ac_activities, filename)
 
 
 # "03Agency and Booking ID" - Report
-data = pd.read_sql('SELECT nihrm__Account__c, Booking_ID_Number__c \
-                    FROM dbo.nihrm__Booking__c', conn)
-data.columns = ['Account: Account ID', 'Booking ID#']
+data = pd.read_sql('SELECT nihrm__Agency__c, Booking_ID_Number__c \
+                    FROM dbo.nihrm__Booking__c \
+                    WHERE nihrm__Agency__c IS NOT NULL', conn)
+data.columns = ['Agency: Account ID', 'Booking ID#']
 filename = '03Agency and Booking ID'
 convert_to_excel(data, filename)
 
 
 # "04Account and Booking ID" - Report
-data = pd.read_sql('SELECT nihrm__Agency__c, Booking_ID_Number__c \
+data = pd.read_sql('SELECT nihrm__Account__c, Booking_ID_Number__c \
                     FROM dbo.nihrm__Booking__c \
-                    WHERE nihrm__Agency__c IS NOT NULL', conn)
-data.columns = ['Agency: Account ID', 'Booking ID#']
+                    WHERE nihrm__Account__c IS NOT NULL', conn)
+data.columns = ['Account: Account ID', 'Booking ID#']
 filename = '04Account and Booking ID'
 convert_to_excel(data, filename)
 
@@ -119,8 +120,7 @@ bk_task = pd.read_sql("SELECT BK.Id, BK.Booking_ID_Number__c, BK.Name, BK.nihrm_
 bk_task.columns = column_name
 # Concate event and task table
 bk_activities = pd.concat([bk_event, bk_task])
-bk_activities['Booking: Owner Name'].replace(user, inplace=True)
-bk_activities['Assigned'].replace(user, inplace=True)
+bk_activities.replace(user, inplace=True)
 filename = '05Booking and Activities not started'
 convert_to_excel(bk_activities, filename)
 
@@ -152,7 +152,7 @@ convert_to_excel(data, filename)
 
 # "08Account Information" - Report
 data = pd.read_sql("SELECT ac.Id, owner.Name, ac.Name, ac.Type, ac.nihrm__RegionName__c, ac.Industry, ac.BillingCountry, ac.BillingState, ac.BillingCity, \
-                           ac.Rating, ac.nihrm__MarketSegment__c, FORMAT(ac.LastModifiedDate, 'MM/dd/yyyy') AS LastModifiedDate, \
+                           ac.Rating, ac.nihrm__MarketSegmentName__c, FORMAT(ac.LastModifiedDate, 'MM/dd/yyyy') AS LastModifiedDate, \
                            FORMAT(ac.LastActivityDate, 'MM/dd/yyyy') AS LastActivityDate, FORMAT(ac.CreatedDate, 'MM/dd/yyyy') AS CreatedDate \
                     FROM dbo.Account AS ac \
                     INNER JOIN dbo.[User] AS owner \
