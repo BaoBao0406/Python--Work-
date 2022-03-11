@@ -7,7 +7,8 @@ conn = pyodbc.connect('Driver={SQL Server};'
                       'Trusted_Connection=yes;')
 
 # temp file path
-save_path = 'I:\\10-Sales\\Personal Folder\\Admin & Assistant Team\\Patrick Leong\\Python Code\\Revenue DataPipeline\\'
+#save_path = 'I:\\10-Sales\\Personal Folder\\Admin & Assistant Team\\Patrick Leong\\Python Code\\Revenue DataPipeline\\'
+save_path = 'X:\\VML\\Sales\\Raw Data\\Patrick\\Data Cleaning\\'
 
 # TODO: Date Range
 now = datetime.datetime.now()
@@ -97,7 +98,8 @@ convert_to_excel(data, filename)
 
 # "05Booking and Activities not started" - Report
 column_name = ['Booking: ID', 'Booking ID#', 'Booking: Booking Post As', 'Status', 'Booking: Owner Name', 'End User SIC', 'End User Region', 'Arrival', 'Booked', 'Activity ID', 'Assigned', 'Subject', 'Type', 'Created Date', 'Start', 'Last Modified Date', 'Status', 'Account', 'Agency']
-bk_event = pd.read_sql("SELECT BK.Id, BK.Booking_ID_Number__c, BK.Name, BK.nihrm__BookingStatus__c, BK.OwnerId, BK.End_User_SIC__c, BK.End_User_Region__c, FORMAT(BK.nihrm__ArrivalDate__c, 'MM/dd/yyyy') AS ArrivalDate, FORMAT(BK.nihrm__BookedDate__c, 'MM/dd/yyyy') AS BookedDate, ev.Id, ev.OwnerId, ev.Subject, ev.Type, FORMAT(ev.CreatedDate, 'MM/dd/yyyy') AS CreatedDate, FORMAT(ev.StartDateTime, 'MM/dd/yyyy') AS Start, FORMAT(ev.LastModifiedDate, 'MM/dd/yyyy') AS LastModifiedDate, ev.VCL_Status__c, ac.Name, ag.Name \
+bk_event = pd.read_sql("SELECT BK.Id, BK.Booking_ID_Number__c, BK.Name, BK.nihrm__BookingStatus__c, BK.OwnerId, BK.End_User_SIC__c, BK.End_User_Region__c, FORMAT(BK.nihrm__ArrivalDate__c, 'MM/dd/yyyy') AS ArrivalDate, FORMAT(BK.nihrm__BookedDate__c, 'MM/dd/yyyy') AS BookedDate, ev.Id, ev.OwnerId, ev.Subject, \
+                               ev.Type, FORMAT(ev.CreatedDate, 'MM/dd/yyyy') AS CreatedDate, FORMAT(ev.StartDateTime, 'MM/dd/yyyy') AS Start, FORMAT(ev.LastModifiedDate, 'MM/dd/yyyy') AS LastModifiedDate, ev.VCL_Status__c, ac.Name, ag.Name \
                         FROM dbo.nihrm__Booking__c AS BK \
                         INNER JOIN dbo.Event AS ev \
                             ON BK.Id = ev.WhatId \
@@ -108,7 +110,8 @@ bk_event = pd.read_sql("SELECT BK.Id, BK.Booking_ID_Number__c, BK.Name, BK.nihrm
                         WHERE BK.nihrm__ArrivalDate__c BETWEEN CONVERT(datetime, '2021-01-18') AND CONVERT(datetime, '2045-12-31')", conn)
 bk_event.columns = column_name
 
-bk_task = pd.read_sql("SELECT BK.Id, BK.Booking_ID_Number__c, BK.Name, BK.nihrm__BookingStatus__c, BK.OwnerId, BK.End_User_SIC__c, BK.End_User_Region__c, FORMAT(BK.nihrm__ArrivalDate__c, 'MM/dd/yyyy') AS ArrivalDate, FORMAT(BK.nihrm__BookedDate__c, 'MM/dd/yyyy') AS BookedDate, tk.Id, tk.OwnerId, tk.Subject, tk.Type, FORMAT(tk.CreatedDate, 'MM/dd/yyyy') AS CreatedDate, FORMAT(tk.ActivityDate, 'MM/dd/yyyy') AS Start, FORMAT(tk.LastModifiedDate, 'MM/dd/yyyy') AS LastModifiedDate, tk.Status, ac.Name, ag.Name \
+bk_task = pd.read_sql("SELECT BK.Id, BK.Booking_ID_Number__c, BK.Name, BK.nihrm__BookingStatus__c, BK.OwnerId, BK.End_User_SIC__c, BK.End_User_Region__c, FORMAT(BK.nihrm__ArrivalDate__c, 'MM/dd/yyyy') AS ArrivalDate, FORMAT(BK.nihrm__BookedDate__c, 'MM/dd/yyyy') AS BookedDate, tk.Id, tk.OwnerId, tk.Subject, \
+                              tk.Type, FORMAT(tk.CreatedDate, 'MM/dd/yyyy') AS CreatedDate, FORMAT(tk.ActivityDate, 'MM/dd/yyyy') AS Start, FORMAT(tk.LastModifiedDate, 'MM/dd/yyyy') AS LastModifiedDate, tk.Status, ac.Name, ag.Name \
                        FROM dbo.nihrm__Booking__c AS BK \
                        INNER JOIN dbo.Task AS tk \
                            ON BK.Id = tk.WhatId \
@@ -160,4 +163,21 @@ data = pd.read_sql("SELECT ac.Id, owner.Name, ac.Name, ac.Type, ac.nihrm__Region
 data.columns = ['Account ID', 'Account Owner', 'Account Name', 'Type', 'Region', 'Industry', 'Country', 'State/Province', 'City', 'Quality Rating', 
                 'Market Segment', 'Last Modified Date', 'Last Activity', 'Created Date']
 filename = '08Account Information'
+convert_to_excel(data, filename)
+
+
+# "09All Event information" - Report
+data = pd.read_sql("SELECT BK.Booking_ID_Number__c, BKEvent.Id, FR.Name, BKEvent.nihrm__AgreedAttendance__c, BKEvent.nihrm__GuaranteedAttendance__c, BK.nihrm__BookingTypeName__c, ac.Name, BK.Name, BK.End_User_SIC__c, \
+                           FORMAT(BKEvent.nihrm__StartDate__c, 'MM/dd/yyyy') AS Start, BKEvent.nihrm__EventClassificationName__c, BK.nihrm__BookingStatus__c, BKEvent.nihrm__EventStatus__c \
+                    FROM dbo.nihrm__BookingEvent__c AS BKEvent\
+                    INNER JOIN dbo.nihrm__Booking__c AS BK \
+                        ON BKEvent.nihrm__Booking__c = BK.Id \
+                    LEFT JOIN dbo.Account AS ac \
+                        ON BK.nihrm__Account__c = ac.Id \
+                    INNER JOIN dbo.nihrm__FunctionRoom__c AS FR \
+                        ON BKEvent.nihrm__FunctionRoom__c = FR.Id \
+                    WHERE nihrm__AgreedAttendance__c > 0", conn)
+data.columns = ['Booking: Booking ID#', 'Event ID', 'Function Room', 'Agreed', 'Guaranteed', 'Booking Type', 'Account', 'Post As', 'End User SIC', 'Start Date', 'Event Classification', 
+                'Booking Status', 'Event Status']
+filename = '09All Event information'
 convert_to_excel(data, filename)
